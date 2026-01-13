@@ -45,7 +45,6 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
         .snapshots();
   }
 
-  // 👈 ye hi apka selected row index hoga
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
@@ -175,21 +174,50 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
 
         final List<String> sortedKeys = allKeys.toList()..sort();
 
-        // 2. Filter keys based on search query (if matches exist)
-        final List<String> displayedKeys;
-        if (searchQuery.isNotEmpty) {
-          final matchingKeys = sortedKeys
-              .where(
-                (key) => key.toLowerCase().contains(searchQuery.toLowerCase()),
-              )
-              .toList();
-          if (matchingKeys.isNotEmpty) {
-            displayedKeys = matchingKeys;
-          } else {
-            displayedKeys = sortedKeys;
+        // 2. Determine if we use flat search layout
+        final List<String> matchingKeys = searchQuery.isNotEmpty
+            ? sortedKeys
+                .where(
+                  (k) => k.toLowerCase().contains(searchQuery.toLowerCase()),
+                )
+                .toList()
+            : [];
+        final bool useFlatSearchLayout = matchingKeys.isNotEmpty;
+
+        final List<String> displayedKeys = useFlatSearchLayout ? [] : sortedKeys;
+
+        // 3. Prepare flat rows if needed
+        final List<Map<String, dynamic>> flatRows = [];
+        if (useFlatSearchLayout) {
+          for (int i = 0; i < docDataList.length; i++) {
+            final data = docDataList[i];
+            final docId = docIds[i];
+            for (var key in matchingKeys) {
+              bool hasKey = false;
+              for (var section in [
+                'fields',
+                'milestones',
+                'dualFields',
+                'labourFields',
+              ]) {
+                final list = data[section] as List? ?? [];
+                if (list.any(
+                  (item) => item is Map && item['keyTitle'] == key,
+                )) {
+                  hasKey = true;
+                  break;
+                }
+              }
+              if (hasKey) {
+                flatRows.add({
+                  'originalIndex': i,
+                  'data': data,
+                  'docId': docId,
+                  'key': key,
+                });
+              }
+            }
           }
-        } else {
-          displayedKeys = sortedKeys;
         }
 
         // Calculate total (either selected or grand total of filtered)
@@ -295,16 +323,30 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
-                        ...displayedKeys.map(
-                          (key) => DataColumn(
+                        if (useFlatSearchLayout) ...[
+                          const DataColumn(
                             label: Text(
-                              key,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
+                              "Data Column",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const DataColumn(
+                            label: Text(
+                              "Data Row",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ] else
+                          ...displayedKeys.map(
+                            (key) => DataColumn(
+                              label: Text(
+                                key,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
-                        ),
                         const DataColumn(
                           label: Text(
                             "Total Paid",
@@ -312,64 +354,23 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                           ),
                         ),
                       ],
-                      rows: List.generate(docDataList.length, (index) {
-                        final data = docDataList[index];
-                        final date = (data['date'] as Timestamp?)?.toDate();
-                        final dateStr = date != null
-                            ? DateFormat('dd/MM/yy').format(date)
-                            : "N/A";
+                      rows: useFlatSearchLayout
+                          ? List.generate(flatRows.length, (index) {
+                              final rowData = flatRows[index];
+                              final data =
+                                  rowData['data'] as Map<String, dynamic>;
+                              final docId = rowData['docId'] as String;
+                              final matchingKey = rowData['key'] as String;
+                              final originalIndex =
+                                  rowData['originalIndex'] as int;
 
-                        return DataRow(
-                          selected: selectedDocIds.contains(docIds[index]),
-                          onLongPress: () {
-                            if (!isSelectionMode) {
-                              setState(() {
-                                isSelectionMode = true;
-                                selectedDocIds.add(docIds[index]);
-                              });
-                            }
-                          },
-                          onSelectChanged: isSelectionMode
-                              ? (isSelected) {
-                                  setState(() {
-                                    if (isSelected == true) {
-                                      selectedDocIds.add(docIds[index]);
-                                    } else {
-                                      selectedDocIds.remove(docIds[index]);
-                                    }
-                                    if (selectedDocIds.isEmpty) {
-                                      isSelectionMode = false;
-                                    }
-                                  });
-                                }
-                              : null,
-                          cells: [
-                            DataCell(
-                              isSelectionMode
-                                  ? Checkbox(
-                                      value: selectedDocIds.contains(
-                                        docIds[index],
-                                      ),
-                                      onChanged: (val) {
-                                        setState(() {
-                                          if (val == true) {
-                                            selectedDocIds.add(docIds[index]);
-                                          } else {
-                                            selectedDocIds.remove(
-                                              docIds[index],
-                                            );
-                                          }
-                                          if (selectedDocIds.isEmpty) {
-                                            isSelectionMode = false;
-                                          }
-                                        });
-                                      },
-                                    )
-                                  : Text("${index + 1}"),
-                            ),
-                            DataCell(Text(dateStr)),
-                            ...displayedKeys.map((key) {
-                              // Extract value for this key across all sections
+                              final date =
+                                  (data['date'] as Timestamp?)?.toDate();
+                              final dateStr = date != null
+                                  ? DateFormat('dd/MM/yy').format(date)
+                                  : "N/A";
+
+                              // Extract value for the specific matching key
                               String value = "";
                               for (var section in [
                                 'fields',
@@ -379,7 +380,8 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                               ]) {
                                 final list = data[section] as List? ?? [];
                                 for (var item in list) {
-                                  if (item is Map && item['keyTitle'] == key) {
+                                  if (item is Map &&
+                                      item['keyTitle'] == matchingKey) {
                                     if (section == 'fields') {
                                       value =
                                           "${item['value'] ?? ''}, ${item['amountPaid'] ?? 0}";
@@ -388,7 +390,7 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                                     } else if (section == 'dualFields') {
                                       final entries =
                                           item['myValue'] as List? ?? [];
-                                      final details = entries
+                                      value = entries
                                           .map((e) {
                                             final title = e['title'] ?? '';
                                             final desc = e['description'] ?? '';
@@ -397,36 +399,201 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                                             return "$title${desc.isNotEmpty ? ', $desc' : ''}, $paid Reminder, $bal";
                                           })
                                           .join(", ");
-                                      value = details;
                                     } else if (section == 'labourFields') {
                                       final entries =
                                           item['myValue'] as List? ?? [];
-                                      final details = entries
+                                      value = entries
                                           .map(
                                             (e) =>
                                                 "${e['title']}, ${e['amountPaid']}",
                                           )
                                           .join(", ");
-                                      value = details;
                                     }
                                   }
                                 }
                               }
-                              return DataCell(
-                                Text(value.isEmpty ? "-" : value),
+
+                              return DataRow(
+                                selected: selectedDocIds.contains(docId),
+                                onLongPress: () {
+                                  if (!isSelectionMode) {
+                                    setState(() {
+                                      isSelectionMode = true;
+                                      selectedDocIds.add(docId);
+                                    });
+                                  }
+                                },
+                                onSelectChanged: isSelectionMode
+                                    ? (isSelected) {
+                                        setState(() {
+                                          if (isSelected == true) {
+                                            selectedDocIds.add(docId);
+                                          } else {
+                                            selectedDocIds.remove(docId);
+                                          }
+                                          if (selectedDocIds.isEmpty) {
+                                            isSelectionMode = false;
+                                          }
+                                        });
+                                      }
+                                    : null,
+                                cells: [
+                                  DataCell(
+                                    isSelectionMode
+                                        ? Checkbox(
+                                            value:
+                                                selectedDocIds.contains(docId),
+                                            onChanged: (val) {
+                                              setState(() {
+                                                if (val == true) {
+                                                  selectedDocIds.add(docId);
+                                                } else {
+                                                  selectedDocIds.remove(docId);
+                                                }
+                                                if (selectedDocIds.isEmpty) {
+                                                  isSelectionMode = false;
+                                                }
+                                              });
+                                            },
+                                          )
+                                        : Text("${originalIndex + 1}"),
+                                  ),
+                                  DataCell(Text(dateStr)),
+                                  DataCell(Text(matchingKey)),
+                                  DataCell(Text(value.isEmpty ? "-" : value)),
+                                  DataCell(
+                                    Text(
+                                      "${data['totalAmountPaid'] ?? 0}",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            })
+                          : List.generate(docDataList.length, (index) {
+                              final data = docDataList[index];
+                              final date =
+                                  (data['date'] as Timestamp?)?.toDate();
+                              final dateStr = date != null
+                                  ? DateFormat('dd/MM/yy').format(date)
+                                  : "N/A";
+
+                              return DataRow(
+                                selected:
+                                    selectedDocIds.contains(docIds[index]),
+                                onLongPress: () {
+                                  if (!isSelectionMode) {
+                                    setState(() {
+                                      isSelectionMode = true;
+                                      selectedDocIds.add(docIds[index]);
+                                    });
+                                  }
+                                },
+                                onSelectChanged: isSelectionMode
+                                    ? (isSelected) {
+                                        setState(() {
+                                          if (isSelected == true) {
+                                            selectedDocIds.add(docIds[index]);
+                                          } else {
+                                            selectedDocIds.remove(
+                                                docIds[index]);
+                                          }
+                                          if (selectedDocIds.isEmpty) {
+                                            isSelectionMode = false;
+                                          }
+                                        });
+                                      }
+                                    : null,
+                                cells: [
+                                  DataCell(
+                                    isSelectionMode
+                                        ? Checkbox(
+                                            value: selectedDocIds.contains(
+                                              docIds[index],
+                                            ),
+                                            onChanged: (val) {
+                                              setState(() {
+                                                if (val == true) {
+                                                  selectedDocIds.add(
+                                                      docIds[index]);
+                                                } else {
+                                                  selectedDocIds.remove(
+                                                    docIds[index],
+                                                  );
+                                                }
+                                                if (selectedDocIds.isEmpty) {
+                                                  isSelectionMode = false;
+                                                }
+                                              });
+                                            },
+                                          )
+                                        : Text("${index + 1}"),
+                                  ),
+                                  DataCell(Text(dateStr)),
+                                  ...displayedKeys.map((key) {
+                                    // Extract value for this key across all sections
+                                    String value = "";
+                                    for (var section in [
+                                      'fields',
+                                      'milestones',
+                                      'dualFields',
+                                      'labourFields',
+                                    ]) {
+                                      final list = data[section] as List? ?? [];
+                                      for (var item in list) {
+                                        if (item is Map &&
+                                            item['keyTitle'] == key) {
+                                          if (section == 'fields') {
+                                            value =
+                                                "${item['value'] ?? ''}, ${item['amountPaid'] ?? 0}";
+                                          } else if (section == 'milestones') {
+                                            value = "${item['amountPaid'] ?? 0}";
+                                          } else if (section == 'dualFields') {
+                                            final entries =
+                                                item['myValue'] as List? ?? [];
+                                            final details = entries
+                                                .map((e) {
+                                                  final title = e['title'] ?? '';
+                                                  final desc =
+                                                      e['description'] ?? '';
+                                                  final paid =
+                                                      e['amountPaid'] ?? 0;
+                                                  final bal = e['balance'] ?? 0;
+                                                  return "$title${desc.isNotEmpty ? ', $desc' : ''}, $paid Reminder, $bal";
+                                                })
+                                                .join(", ");
+                                            value = details;
+                                          } else if (section == 'labourFields') {
+                                            final entries =
+                                                item['myValue'] as List? ?? [];
+                                            final details = entries
+                                                .map(
+                                                  (e) =>
+                                                      "${e['title']}, ${e['amountPaid']}",
+                                                )
+                                                .join(", ");
+                                            value = details;
+                                          }
+                                        }
+                                      }
+                                    }
+                                    return DataCell(
+                                      Text(value.isEmpty ? "-" : value),
+                                    );
+                                  }),
+                                  DataCell(
+                                    Text(
+                                      "${data['totalAmountPaid'] ?? 0}",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               );
                             }),
-                            DataCell(
-                              Text(
-                                "${data['totalAmountPaid'] ?? 0}",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      }),
                     ),
                   ),
                 ),
