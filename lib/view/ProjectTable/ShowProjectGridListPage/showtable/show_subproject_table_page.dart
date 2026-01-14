@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'show_title_project_table_page.dart';
+
 class ShowSubProjectTablePage extends StatefulWidget {
   final String projectId;
   final String subprojectId;
@@ -206,6 +208,32 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
         } else {
           for (var data in docDataList) {
             displayTotal += (data['totalAmountPaid'] as num?)?.toDouble() ?? 0;
+          }
+        }
+
+        // Check if searchQuery matches any title exactly
+        bool isTitleMatched = false;
+        if (searchQuery.isNotEmpty) {
+          for (var data in docDataList) {
+            for (var section in ['dualFields', 'labourFields']) {
+              final list = data[section] as List? ?? [];
+              for (var item in list) {
+                if (item is Map && item.containsKey('myValue')) {
+                  final myValue = item['myValue'] as List? ?? [];
+                  for (var subItem in myValue) {
+                    if (subItem is Map &&
+                        (subItem['title'] ?? "").toString().toLowerCase() ==
+                            searchQuery.toLowerCase()) {
+                      isTitleMatched = true;
+                      break;
+                    }
+                  }
+                }
+                if (isTitleMatched) break;
+              }
+              if (isTitleMatched) break;
+            }
+            if (isTitleMatched) break;
           }
         }
 
@@ -443,24 +471,70 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                     ),
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      "Total pppAmount: ",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    if (isTitleMatched)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary,
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ShowTitleProjectTablePage(
+                                  projectId: widget.projectId,
+                                  subprojectId: widget.subprojectId,
+                                  subprojectName: widget.subprojectName,
+                                  searchedTitle: searchQuery,
+                                  allDocs: allDocs,
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            "mybutton",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    Text(
-                      displayTotal.toStringAsFixed(2),
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          "Total Amount: ",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                        Text(
+                          displayTotal.toStringAsFixed(2),
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
