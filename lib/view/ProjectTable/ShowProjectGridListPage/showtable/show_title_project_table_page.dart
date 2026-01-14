@@ -47,6 +47,14 @@ class ShowTitleProjectTablePage extends StatelessWidget {
       }
     }
 
+    // Calculate total amount paid
+    double totalAmountPaid = 0;
+    for (var data in titleData) {
+      final details = data['details'] as Map<String, dynamic>;
+      totalAmountPaid +=
+          double.tryParse((details['amountPaid'] ?? 0).toString()) ?? 0;
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text("$searchedTitle Details")),
       body: titleData.isEmpty
@@ -104,6 +112,38 @@ class ShowTitleProjectTablePage extends StatelessWidget {
                     );
                   }).toList(),
                 ),
+              ),
+            ),
+      bottomNavigationBar: titleData.isEmpty
+          ? null
+          : Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Total Amount Paid:",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    totalAmountPaid.toStringAsFixed(2),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
               ),
             ),
     );
