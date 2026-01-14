@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class ShowTitleProjectTablePage extends StatelessWidget {
+class ShowTitleProjectTablePage extends StatefulWidget {
   final String projectId;
   final String subprojectId;
   final String subprojectName;
@@ -19,11 +19,20 @@ class ShowTitleProjectTablePage extends StatelessWidget {
   });
 
   @override
+  State<ShowTitleProjectTablePage> createState() =>
+      _ShowTitleProjectTablePageState();
+}
+
+class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
+  Set<int> selectedIndices = {};
+  bool isSelectionMode = false;
+
+  @override
   Widget build(BuildContext context) {
     // Collect data for the specific title
     final List<Map<String, dynamic>> titleData = [];
 
-    for (var doc in allDocs) {
+    for (var doc in widget.allDocs) {
       final data = doc.data() as Map<String, dynamic>;
       final date = (data['date'] as Timestamp?)?.toDate();
       final dateStr = date != null
@@ -38,7 +47,7 @@ class ShowTitleProjectTablePage extends StatelessWidget {
             for (var subItem in myValue) {
               if (subItem is Map &&
                   (subItem['title'] ?? "").toString().toLowerCase() ==
-                      searchedTitle.toLowerCase()) {
+                      widget.searchedTitle.toLowerCase()) {
                 titleData.add({'date': dateStr, 'details': subItem});
               }
             }
@@ -47,16 +56,60 @@ class ShowTitleProjectTablePage extends StatelessWidget {
       }
     }
 
-    // Calculate total amount paid
+    // Calculate total amount paid (either selected or grand total)
     double totalAmountPaid = 0;
-    for (var data in titleData) {
-      final details = data['details'] as Map<String, dynamic>;
-      totalAmountPaid +=
-          double.tryParse((details['amountPaid'] ?? 0).toString()) ?? 0;
+    if (selectedIndices.isNotEmpty) {
+      for (var index in selectedIndices) {
+        if (index < titleData.length) {
+          final details = titleData[index]['details'] as Map<String, dynamic>;
+          totalAmountPaid +=
+              double.tryParse((details['amountPaid'] ?? 0).toString()) ?? 0;
+        }
+      }
+    } else {
+      for (var data in titleData) {
+        final details = data['details'] as Map<String, dynamic>;
+        totalAmountPaid +=
+            double.tryParse((details['amountPaid'] ?? 0).toString()) ?? 0;
+      }
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text("$searchedTitle Details")),
+      appBar: AppBar(
+        leading: isSelectionMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() {
+                    isSelectionMode = false;
+                    selectedIndices.clear();
+                  });
+                },
+              )
+            : null,
+        title: Text(
+          isSelectionMode
+              ? "${selectedIndices.length} Selected"
+              : "${widget.searchedTitle} Details",
+        ),
+        actions: [
+          if (isSelectionMode)
+            IconButton(
+              icon: const Icon(Icons.select_all_rounded),
+              onPressed: () {
+                setState(() {
+                  if (selectedIndices.length == titleData.length) {
+                    selectedIndices.clear();
+                  } else {
+                    selectedIndices.addAll(
+                      List.generate(titleData.length, (index) => index),
+                    );
+                  }
+                });
+              },
+            ),
+        ],
+      ),
       body: titleData.isEmpty
           ? const Center(child: Text("No data found for this title"))
           : SingleChildScrollView(
@@ -64,10 +117,17 @@ class ShowTitleProjectTablePage extends StatelessWidget {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
+                  showCheckboxColumn: false,
                   headingRowColor: WidgetStateProperty.all(
                     Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   ),
                   columns: const [
+                    DataColumn(
+                      label: Text(
+                        "Index",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                     DataColumn(
                       label: Text(
                         "Date",
@@ -99,10 +159,55 @@ class ShowTitleProjectTablePage extends StatelessWidget {
                       ),
                     ),
                   ],
-                  rows: titleData.map((data) {
+                  rows: List.generate(titleData.length, (index) {
+                    final data = titleData[index];
                     final details = data['details'] as Map<String, dynamic>;
+                    final isSelected = selectedIndices.contains(index);
+
                     return DataRow(
+                      selected: isSelected,
+                      onLongPress: () {
+                        if (!isSelectionMode) {
+                          setState(() {
+                            isSelectionMode = true;
+                            selectedIndices.add(index);
+                          });
+                        }
+                      },
+                      onSelectChanged: isSelectionMode
+                          ? (value) {
+                              setState(() {
+                                if (value == true) {
+                                  selectedIndices.add(index);
+                                } else {
+                                  selectedIndices.remove(index);
+                                }
+                                if (selectedIndices.isEmpty) {
+                                  isSelectionMode = false;
+                                }
+                              });
+                            }
+                          : null,
                       cells: [
+                        DataCell(
+                          isSelectionMode
+                              ? Checkbox(
+                                  value: isSelected,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      if (val == true) {
+                                        selectedIndices.add(index);
+                                      } else {
+                                        selectedIndices.remove(index);
+                                      }
+                                      if (selectedIndices.isEmpty) {
+                                        isSelectionMode = false;
+                                      }
+                                    });
+                                  },
+                                )
+                              : Text("${index + 1}"),
+                        ),
                         DataCell(Text(data['date'])),
                         DataCell(Text(details['title'] ?? "-")),
                         DataCell(Text(details['description'] ?? "-")),
@@ -110,7 +215,7 @@ class ShowTitleProjectTablePage extends StatelessWidget {
                         DataCell(Text("${details['balance'] ?? 0}")),
                       ],
                     );
-                  }).toList(),
+                  }),
                 ),
               ),
             ),
@@ -131,9 +236,14 @@ class ShowTitleProjectTablePage extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "Total Amount Paid:",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Text(
+                    selectedIndices.isNotEmpty
+                        ? "Selected Total:"
+                        : "Total Amount Paid:",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     totalAmountPaid.toStringAsFixed(2),
