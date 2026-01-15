@@ -32,6 +32,7 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
     // Collect data for the specific title
     final List<Map<String, dynamic>> titleData = [];
 
+    final queryLC = widget.searchedTitle.toLowerCase();
     for (var doc in widget.allDocs) {
       final data = doc.data() as Map<String, dynamic>;
       final date = (data['date'] as Timestamp?)?.toDate();
@@ -42,13 +43,27 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
       for (var section in ['dualFields', 'labourFields']) {
         final list = data[section] as List? ?? [];
         for (var item in list) {
-          if (item is Map && item.containsKey('myValue')) {
+          if (item is Map) {
+            final keyTitleLC = (item['keyTitle'] ?? "")
+                .toString()
+                .toLowerCase();
             final myValue = item['myValue'] as List? ?? [];
-            for (var subItem in myValue) {
-              if (subItem is Map &&
-                  (subItem['title'] ?? "").toString().toLowerCase() ==
-                      widget.searchedTitle.toLowerCase()) {
-                titleData.add({'date': dateStr, 'details': subItem});
+
+            // If the category (keyTitle) itself matches, add ALL sub-items
+            if (keyTitleLC == queryLC) {
+              for (var subItem in myValue) {
+                if (subItem is Map) {
+                  titleData.add({'date': dateStr, 'details': subItem});
+                }
+              }
+            } else {
+              // Otherwise, check if specific sub-item titles match
+              for (var subItem in myValue) {
+                if (subItem is Map &&
+                    (subItem['title'] ?? "").toString().toLowerCase() ==
+                        queryLC) {
+                  titleData.add({'date': dateStr, 'details': subItem});
+                }
               }
             }
           }

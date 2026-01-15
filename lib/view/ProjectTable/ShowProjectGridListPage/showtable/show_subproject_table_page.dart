@@ -211,29 +211,45 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
           }
         }
 
-        // Check if searchQuery matches any title exactly
-        bool isTitleMatched = false;
+        // Check if searchQuery matches any title or keyTitle exactly
+        bool isSearchMatched = false;
         if (searchQuery.isNotEmpty) {
+          final queryLC = searchQuery.toLowerCase();
           for (var data in docDataList) {
-            for (var section in ['dualFields', 'labourFields']) {
+            for (var section in [
+              'fields',
+              'milestones',
+              'dualFields',
+              'labourFields',
+            ]) {
               final list = data[section] as List? ?? [];
               for (var item in list) {
-                if (item is Map && item.containsKey('myValue')) {
-                  final myValue = item['myValue'] as List? ?? [];
-                  for (var subItem in myValue) {
-                    if (subItem is Map &&
-                        (subItem['title'] ?? "").toString().toLowerCase() ==
-                            searchQuery.toLowerCase()) {
-                      isTitleMatched = true;
-                      break;
+                if (item is Map) {
+                  // Check keyTitle match
+                  final kt = (item['keyTitle'] ?? "").toString().toLowerCase();
+                  if (kt == queryLC) {
+                    isSearchMatched = true;
+                    break;
+                  }
+
+                  // Check title match (in myValue lists)
+                  if (item.containsKey('myValue') && item['myValue'] is List) {
+                    final myValue = item['myValue'] as List? ?? [];
+                    for (var subItem in myValue) {
+                      if (subItem is Map &&
+                          (subItem['title'] ?? "").toString().toLowerCase() ==
+                              queryLC) {
+                        isSearchMatched = true;
+                        break;
+                      }
                     }
                   }
                 }
-                if (isTitleMatched) break;
+                if (isSearchMatched) break;
               }
-              if (isTitleMatched) break;
+              if (isSearchMatched) break;
             }
-            if (isTitleMatched) break;
+            if (isSearchMatched) break;
           }
         }
 
@@ -474,7 +490,7 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (isTitleMatched)
+                    if (isSearchMatched)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8.0),
                         child: ElevatedButton(
