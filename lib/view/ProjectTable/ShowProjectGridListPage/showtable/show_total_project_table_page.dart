@@ -182,10 +182,50 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
     });
   }
 
+  bool _shouldIncludeColumn(Map item, String subName, String q) {
+    if (q.isEmpty) return true;
+
+    // Check Subproject Name
+    if (subName.toLowerCase().contains(q)) return true;
+
+    // Check KeyTitle
+    if ((item['keyTitle']?.toString().toLowerCase() ?? "").contains(q))
+      return true;
+
+    // Helper to check map values
+    bool checkMap(Map m) {
+      for (var key in [
+        'value',
+        'amountPaid',
+        'balance',
+        'description',
+        'title',
+      ]) {
+        if (m.containsKey(key)) {
+          final val = m[key].toString().toLowerCase();
+          if (val.contains(q)) return true;
+        }
+      }
+      return false;
+    }
+
+    if (checkMap(item)) return true;
+
+    // Check nested myValue if present
+    if (item.containsKey('myValue') && item['myValue'] is List) {
+      for (var subItem in (item['myValue'] as List)) {
+        if (subItem is Map && checkMap(subItem)) return true;
+      }
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Collect all unique (Subproject, KeyTitle) combinations
     final Set<String> allCategoryKeys = {};
+    final q = searchQuery.trim().toLowerCase();
+
     for (var groupedEntry in filteredData) {
       final docs = groupedEntry['docs'] as List? ?? [];
       for (var data in docs) {
@@ -199,7 +239,9 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
           final list = data[section] as List? ?? [];
           for (var item in list) {
             if (item is Map && item.containsKey('keyTitle')) {
-              allCategoryKeys.add("$subName|${item['keyTitle']}");
+              if (_shouldIncludeColumn(item, subName, q)) {
+                allCategoryKeys.add("$subName|${item['keyTitle']}");
+              }
             }
           }
         }
