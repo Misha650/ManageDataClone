@@ -45,8 +45,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
           .collection("subprojects")
           .get();
 
-      List<Map<String, dynamic>> tempAllData = [];
-
+      Map<String, Map<String, dynamic>> groupedData = {};
       for (var subDoc in subprojectsSnap.docs) {
         final subprojectName = subDoc.data()['title'] ?? "Untitled";
         final formDataSnap = await subDoc.reference
@@ -55,16 +54,44 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
             .get();
         for (var formDoc in formDataSnap.docs) {
           final data = formDoc.data();
-          data['id'] = formDoc.id;
-          data['subprojectName'] = subprojectName;
-          data['subprojectId'] = subDoc.id;
-          tempAllData.add(data);
+          final date = (data['date'] as Timestamp?)?.toDate();
+          final dateStr = date != null
+              ? DateFormat('dd/MM/yy').format(date)
+              : "N/A";
+
+          if (!groupedData.containsKey(dateStr)) {
+            groupedData[dateStr] = {
+              'id': dateStr,
+              'date': data['date'],
+              'totalAmountPaid': (data['totalAmountPaid'] as num? ?? 0)
+                  .toDouble(),
+              'docs': [
+                {...data, 'subprojectName': subprojectName, 'id': formDoc.id},
+              ],
+            };
+          } else {
+            final entry = groupedData[dateStr]!;
+            entry['totalAmountPaid'] += (data['totalAmountPaid'] as num? ?? 0)
+                .toDouble();
+            (entry['docs'] as List).add({
+              ...data,
+              'subprojectName': subprojectName,
+              'id': formDoc.id,
+            });
+          }
         }
       }
 
+      final List<Map<String, dynamic>> finalData = groupedData.values.toList();
+      finalData.sort((a, b) {
+        final dateA = (a['date'] as Timestamp?)?.toDate() ?? DateTime(0);
+        final dateB = (b['date'] as Timestamp?)?.toDate() ?? DateTime(0);
+        return dateB.compareTo(dateA);
+      });
+
       setState(() {
-        allFormData = tempAllData;
-        filteredData = tempAllData;
+        allFormData = finalData;
+        filteredData = finalData;
         isLoading = false;
       });
     } catch (e) {
@@ -86,43 +113,41 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
         filteredData = allFormData;
       } else {
         final q = query.toLowerCase();
-        filteredData = allFormData.where((data) {
-          final date = (data['date'] as Timestamp?)?.toDate();
-          final dateStr = date != null
-              ? DateFormat('dd/MM/yy').format(date).toLowerCase()
-              : "";
-          final totalPaid = (data['totalAmountPaid'] ?? 0)
-              .toString()
-              .toLowerCase();
-          final subName = (data['subprojectName'] ?? "")
+        filteredData = allFormData.where((groupedEntry) {
+          final dateStr = (groupedEntry['id'] ?? "").toString().toLowerCase();
+          final totalPaid = (groupedEntry['totalAmountPaid'] ?? 0)
               .toString()
               .toLowerCase();
 
-          bool match =
-              dateStr.contains(q) ||
-              totalPaid.contains(q) ||
-              subName.contains(q);
-          if (match) return true;
+          if (dateStr.contains(q) || totalPaid.contains(q)) return true;
 
-          for (var section in [
-            'fields',
-            'milestones',
-            'dualFields',
-            'labourFields',
-          ]) {
-            final list = data[section] as List? ?? [];
-            for (var item in list) {
-              if (item is Map) {
-                final kt = (item['keyTitle'] ?? "").toString().toLowerCase();
-                final val = (item['value'] ?? "").toString().toLowerCase();
-                if (kt.contains(q) || val.contains(q)) return true;
-                if (item.containsKey('myValue') && item['myValue'] is List) {
-                  for (var subItem in (item['myValue'] as List)) {
-                    if (subItem is Map) {
-                      final title = (subItem['title'] ?? "")
-                          .toString()
-                          .toLowerCase();
-                      if (title.contains(q)) return true;
+          final docs = groupedEntry['docs'] as List? ?? [];
+          for (var data in docs) {
+            final subName = (data['subprojectName'] ?? "")
+                .toString()
+                .toLowerCase();
+            if (subName.contains(q)) return true;
+
+            for (var section in [
+              'fields',
+              'milestones',
+              'dualFields',
+              'labourFields',
+            ]) {
+              final list = data[section] as List? ?? [];
+              for (var item in list) {
+                if (item is Map) {
+                  final kt = (item['keyTitle'] ?? "").toString().toLowerCase();
+                  final val = (item['value'] ?? "").toString().toLowerCase();
+                  if (kt.contains(q) || val.contains(q)) return true;
+                  if (item.containsKey('myValue') && item['myValue'] is List) {
+                    for (var subItem in (item['myValue'] as List)) {
+                      if (subItem is Map) {
+                        final title = (subItem['title'] ?? "")
+                            .toString()
+                            .toLowerCase();
+                        if (title.contains(q)) return true;
+                      }
                     }
                   }
                 }
@@ -135,44 +160,25 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
     });
   }
 
-  Widget _buildTwoTierHeader(String top, String bottom) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (top.isNotEmpty)
-          Text(
-            top,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.blueGrey,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        Text(
-          bottom,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     // Collect all unique (Subproject, KeyTitle) combinations
     final Set<String> allCategoryKeys = {};
-    for (var data in filteredData) {
-      final subName = data['subprojectName'] ?? "Untitled";
-      for (var section in [
-        'fields',
-        'milestones',
-        'dualFields',
-        'labourFields',
-      ]) {
-        final list = data[section] as List? ?? [];
-        for (var item in list) {
-          if (item is Map && item.containsKey('keyTitle')) {
-            allCategoryKeys.add("$subName|${item['keyTitle']}");
+    for (var groupedEntry in filteredData) {
+      final docs = groupedEntry['docs'] as List? ?? [];
+      for (var data in docs) {
+        final subName = data['subprojectName'] ?? "Untitled";
+        for (var section in [
+          'fields',
+          'milestones',
+          'dualFields',
+          'labourFields',
+        ]) {
+          final list = data[section] as List? ?? [];
+          for (var item in list) {
+            if (item is Map && item.containsKey('keyTitle')) {
+              allCategoryKeys.add("$subName|${item['keyTitle']}");
+            }
           }
         }
       }
@@ -268,149 +274,201 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                     scrollDirection: Axis.vertical,
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        showCheckboxColumn: false,
-                        columnSpacing: 20,
-                        headingRowHeight: 60,
-                        headingRowColor: WidgetStateProperty.all(
-                          Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.1),
-                        ),
-                        columns: [
-                          DataColumn(
-                            label: _buildTwoTierHeader(
-                              "",
-                              isSelectionMode ? "" : "Index",
-                            ),
-                          ),
-                          DataColumn(label: _buildTwoTierHeader("", "Date")),
-                          ...sortedPairs.map((pair) {
-                            final parts = pair.split("|");
-                            return DataColumn(
-                              label: _buildTwoTierHeader(parts[0], parts[1]),
-                            );
-                          }),
-                          DataColumn(
-                            label: _buildTwoTierHeader("", "Total Paid"),
-                          ),
-                        ],
-                        rows: List.generate(filteredData.length, (index) {
-                          final data = filteredData[index];
-                          final date = (data['date'] as Timestamp?)?.toDate();
-                          final dateStr = date != null
-                              ? DateFormat('dd/MM/yy').format(date)
-                              : "N/A";
-                          final isSelected = selectedDocIds.contains(
-                            data['id'],
-                          );
-                          final rowSubproject =
-                              data['subprojectName'] ?? "Untitled";
-
-                          return DataRow(
-                            selected: isSelected,
-                            onLongPress: () {
-                              if (!isSelectionMode) {
-                                setState(() {
-                                  isSelectionMode = true;
-                                  selectedDocIds.add(data['id']);
-                                });
-                              }
-                            },
-                            onSelectChanged: isSelectionMode
-                                ? (isSelected) {
-                                    setState(() {
-                                      if (isSelected == true) {
-                                        selectedDocIds.add(data['id']);
-                                      } else {
-                                        selectedDocIds.remove(data['id']);
-                                      }
-                                      if (selectedDocIds.isEmpty)
-                                        isSelectionMode = false;
-                                    });
-                                  }
-                                : null,
-                            cells: [
-                              DataCell(
-                                isSelectionMode
-                                    ? Checkbox(
-                                        value: isSelected,
-                                        onChanged: (val) {
-                                          setState(() {
-                                            if (val == true) {
-                                              selectedDocIds.add(data['id']);
-                                            } else {
-                                              selectedDocIds.remove(data['id']);
-                                            }
-                                            if (selectedDocIds.isEmpty)
-                                              isSelectionMode = false;
-                                          });
-                                        },
-                                      )
-                                    : Text("${index + 1}"),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Table(
+                          defaultVerticalAlignment:
+                              TableCellVerticalAlignment.middle,
+                          columnWidths: {
+                            0: const IntrinsicColumnWidth(), // Index
+                            1: const FixedColumnWidth(100), // Date
+                            for (int i = 0; i < sortedPairs.length; i++)
+                              i + 2: const FixedColumnWidth(150),
+                            sortedPairs.length + 2: const FixedColumnWidth(
+                              100,
+                            ), // Total Paid
+                          },
+                          children: [
+                            // --- Header Row 1: Categories (Yellow) ---
+                            TableRow(
+                              decoration: const BoxDecoration(
+                                color: Colors.yellow,
                               ),
-                              DataCell(Text(dateStr)),
-                              ...sortedPairs.map((pair) {
-                                final parts = pair.split("|");
-                                final colSubproject = parts[0];
-                                final colKey = parts[1];
+                              children: [
+                                _buildHeaderCell("Index"),
+                                _buildHeaderCell("Date"),
+                                ...sortedPairs.map((pair) {
+                                  final parts = pair.split("|");
+                                  return _buildHeaderCell(parts[0]);
+                                }),
+                                _buildHeaderCell("Total Paid"),
+                              ],
+                            ),
+                            // --- Header Row 2: KeyTitles (Pink) ---
+                            TableRow(
+                              decoration: const BoxDecoration(
+                                color: Color.fromARGB(
+                                  255,
+                                  255,
+                                  192,
+                                  203,
+                                ), // Pink
+                              ),
+                              children: [
+                                _buildHeaderCell(""),
+                                _buildHeaderCell(""),
+                                ...sortedPairs.map((pair) {
+                                  final parts = pair.split("|");
+                                  return _buildHeaderCell(parts[1]);
+                                }),
+                                _buildHeaderCell(""),
+                              ],
+                            ),
+                            // --- Data Rows ---
+                            ...List.generate(filteredData.length, (index) {
+                              final groupedEntry = filteredData[index];
+                              final date = (groupedEntry['date'] as Timestamp?)
+                                  ?.toDate();
+                              final dateStr = date != null
+                                  ? DateFormat('dd/MM/yy').format(date)
+                                  : "N/A";
+                              final isSelected = selectedDocIds.contains(
+                                groupedEntry['id'],
+                              );
+                              final docs = groupedEntry['docs'] as List? ?? [];
 
-                                // Only show value if this row's subproject matches the column's subproject
-                                String value = "";
-                                if (rowSubproject == colSubproject) {
-                                  for (var section in [
-                                    'fields',
-                                    'milestones',
-                                    'dualFields',
-                                    'labourFields',
-                                  ]) {
-                                    final list = data[section] as List? ?? [];
-                                    for (var item in list) {
-                                      if (item is Map &&
-                                          item['keyTitle'] == colKey) {
-                                        if (section == 'fields') {
-                                          value =
-                                              "${item['value'] ?? ''}, ${item['amountPaid'] ?? 0}";
-                                        } else if (section == 'milestones') {
-                                          value = "${item['amountPaid'] ?? 0}";
-                                        } else if (section == 'dualFields') {
-                                          final entries =
-                                              item['myValue'] as List? ?? [];
-                                          value = entries
-                                              .map(
-                                                (e) =>
-                                                    "${e['title']}, ${e['amountPaid']}",
-                                              )
-                                              .join(", ");
-                                        } else if (section == 'labourFields') {
-                                          final entries =
-                                              item['myValue'] as List? ?? [];
-                                          value = entries
-                                              .map(
-                                                (e) =>
-                                                    "${e['title']}, ${e['amountPaid']}",
-                                              )
-                                              .join(", ");
+                              return TableRow(
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? Colors.blue.withOpacity(0.2)
+                                      : null,
+                                ),
+                                children: [
+                                  // Index / Checkbox Cell
+                                  _buildDataCell(
+                                    GestureDetector(
+                                      onLongPress: () {
+                                        if (!isSelectionMode) {
+                                          setState(() {
+                                            isSelectionMode = true;
+                                            selectedDocIds.add(
+                                              groupedEntry['id'],
+                                            );
+                                          });
+                                        }
+                                      },
+                                      child: isSelectionMode
+                                          ? Checkbox(
+                                              value: isSelected,
+                                              onChanged: (val) {
+                                                setState(() {
+                                                  if (val == true) {
+                                                    selectedDocIds.add(
+                                                      groupedEntry['id'],
+                                                    );
+                                                  } else {
+                                                    selectedDocIds.remove(
+                                                      groupedEntry['id'],
+                                                    );
+                                                  }
+                                                  if (selectedDocIds.isEmpty)
+                                                    isSelectionMode = false;
+                                                });
+                                              },
+                                            )
+                                          : Text("${index + 1}"),
+                                    ),
+                                  ),
+                                  // Date Cell
+                                  _buildDataCell(Text(dateStr)),
+                                  // Dynamic Key Value Cells
+                                  ...sortedPairs.map((pair) {
+                                    final parts = pair.split("|");
+                                    final colSubproject = parts[0];
+                                    final colKey = parts[1];
+
+                                    // Find all docs in this grouped row that match the column's subproject
+                                    List<String> values = [];
+                                    for (var data in docs) {
+                                      final rowSubproject =
+                                          data['subprojectName'] ?? "Untitled";
+                                      if (rowSubproject == colSubproject) {
+                                        for (var section in [
+                                          'fields',
+                                          'milestones',
+                                          'dualFields',
+                                          'labourFields',
+                                        ]) {
+                                          final list =
+                                              data[section] as List? ?? [];
+                                          for (var item in list) {
+                                            if (item is Map &&
+                                                item['keyTitle'] == colKey) {
+                                              if (section == 'fields') {
+                                                values.add(
+                                                  "${item['value'] ?? ''}, ${item['amountPaid'] ?? 0}",
+                                                );
+                                              } else if (section ==
+                                                  'milestones') {
+                                                values.add(
+                                                  "${item['amountPaid'] ?? 0}",
+                                                );
+                                              } else if (section ==
+                                                  'dualFields') {
+                                                final entries =
+                                                    item['myValue'] as List? ??
+                                                    [];
+                                                values.add(
+                                                  entries
+                                                      .map(
+                                                        (e) =>
+                                                            "${e['title']}, ${e['amountPaid']}",
+                                                      )
+                                                      .join(", "),
+                                                );
+                                              } else if (section ==
+                                                  'labourFields') {
+                                                final entries =
+                                                    item['myValue'] as List? ??
+                                                    [];
+                                                values.add(
+                                                  entries
+                                                      .map(
+                                                        (e) =>
+                                                            "${e['title']}, ${e['amountPaid']}",
+                                                      )
+                                                      .join(", "),
+                                                );
+                                              }
+                                            }
+                                          }
                                         }
                                       }
                                     }
-                                  }
-                                }
-                                return DataCell(
-                                  Text(value.isEmpty ? "-" : value),
-                                );
-                              }),
-                              DataCell(
-                                Text(
-                                  "${data['totalAmountPaid'] ?? 0}",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
+                                    final displayValue = values.join(" | ");
+                                    return _buildDataCell(
+                                      Text(
+                                        displayValue.isEmpty
+                                            ? "-"
+                                            : displayValue,
+                                        textAlign: TextAlign.start,
+                                      ),
+                                    );
+                                  }),
+                                  // Total Paid Cell
+                                  _buildDataCell(
+                                    Text(
+                                      "${groupedEntry['totalAmountPaid'] ?? 0}",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ],
-                          );
-                        }),
+                                ],
+                              );
+                            }),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -453,6 +511,28 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildHeaderCell(String text) {
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      child: Center(
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataCell(Widget child) {
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      constraints: const BoxConstraints(minHeight: 48),
+      alignment: Alignment.centerLeft,
+      child: child,
     );
   }
 }
