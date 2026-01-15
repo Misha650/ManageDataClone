@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+//misha
 class ShowTotalProjectTablePage extends StatefulWidget {
   final String projectId;
   final String projectName;
@@ -109,10 +110,10 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
   void _filterData(String query) {
     setState(() {
       searchQuery = query;
-      if (query.isEmpty) {
+      if (query.trim().isEmpty) {
         filteredData = allFormData;
       } else {
-        final q = query.toLowerCase();
+        final q = query.trim().toLowerCase();
         filteredData = allFormData.where((groupedEntry) {
           final dateStr = (groupedEntry['id'] ?? "").toString().toLowerCase();
           final totalPaid = (groupedEntry['totalAmountPaid'] ?? 0)
@@ -123,11 +124,19 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
 
           final docs = groupedEntry['docs'] as List? ?? [];
           for (var data in docs) {
+            // Check subproject name
             final subName = (data['subprojectName'] ?? "")
                 .toString()
                 .toLowerCase();
             if (subName.contains(q)) return true;
 
+            // Check total amount paid of this specific doc
+            final docTotal = (data['totalAmountPaid'] ?? 0)
+                .toString()
+                .toLowerCase();
+            if (docTotal.contains(q)) return true;
+
+            // Check sections
             for (var section in [
               'fields',
               'milestones',
@@ -137,17 +146,30 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
               final list = data[section] as List? ?? [];
               for (var item in list) {
                 if (item is Map) {
-                  final kt = (item['keyTitle'] ?? "").toString().toLowerCase();
-                  final val = (item['value'] ?? "").toString().toLowerCase();
-                  if (kt.contains(q) || val.contains(q)) return true;
+                  // Helper to check all values in a map
+                  bool checkMap(Map m) {
+                    for (var key in [
+                      'keyTitle',
+                      'value',
+                      'amountPaid',
+                      'balance',
+                      'description',
+                      'title',
+                    ]) {
+                      if (m.containsKey(key)) {
+                        final val = m[key].toString().toLowerCase();
+                        if (val.contains(q)) return true;
+                      }
+                    }
+                    return false;
+                  }
+
+                  if (checkMap(item)) return true;
+
+                  // Check nested myValue if present
                   if (item.containsKey('myValue') && item['myValue'] is List) {
                     for (var subItem in (item['myValue'] as List)) {
-                      if (subItem is Map) {
-                        final title = (subItem['title'] ?? "")
-                            .toString()
-                            .toLowerCase();
-                        if (title.contains(q)) return true;
-                      }
+                      if (subItem is Map && checkMap(subItem)) return true;
                     }
                   }
                 }
@@ -220,10 +242,14 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
             : null,
         title: isSearching
             ? TextField(
+                key: const ValueKey('search_text_field'),
                 controller: _searchController,
                 autofocus: true,
+                style: const TextStyle(color: Colors.black),
+                cursorColor: Colors.black,
                 decoration: const InputDecoration(
                   hintText: "Search...",
+                  hintStyle: TextStyle(color: Colors.black54),
                   border: InputBorder.none,
                 ),
                 onChanged: _filterData,
