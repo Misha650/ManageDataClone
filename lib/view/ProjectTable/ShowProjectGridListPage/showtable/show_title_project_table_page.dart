@@ -26,11 +26,14 @@ class ShowTitleProjectTablePage extends StatefulWidget {
 class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
   Set<int> selectedIndices = {};
   bool isSelectionMode = false;
+  bool isSearching = false;
+  String searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     // Collect data for the specific title
-    final List<Map<String, dynamic>> titleData = [];
+    final List<Map<String, dynamic>> allTitleData = [];
 
     final queryLC = widget.searchedTitle.toLowerCase();
     for (var doc in widget.allDocs) {
@@ -53,7 +56,7 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
             if (keyTitleLC == queryLC) {
               for (var subItem in myValue) {
                 if (subItem is Map) {
-                  titleData.add({'date': dateStr, 'details': subItem});
+                  allTitleData.add({'date': dateStr, 'details': subItem});
                 }
               }
             } else {
@@ -62,7 +65,7 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
                 if (subItem is Map &&
                     (subItem['title'] ?? "").toString().toLowerCase() ==
                         queryLC) {
-                  titleData.add({'date': dateStr, 'details': subItem});
+                  allTitleData.add({'date': dateStr, 'details': subItem});
                 }
               }
             }
@@ -70,6 +73,24 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
         }
       }
     }
+
+    // Filter data based on local search query
+    final List<Map<String, dynamic>> titleData = allTitleData.where((item) {
+      if (searchQuery.isEmpty) return true;
+      final q = searchQuery.toLowerCase();
+      final date = (item['date'] ?? "").toString().toLowerCase();
+      final details = item['details'] as Map<String, dynamic>;
+      final title = (details['title'] ?? "").toString().toLowerCase();
+      final desc = (details['description'] ?? "").toString().toLowerCase();
+      final paid = (details['amountPaid'] ?? "").toString().toLowerCase();
+      final bal = (details['balance'] ?? "").toString().toLowerCase();
+
+      return date.contains(q) ||
+          title.contains(q) ||
+          desc.contains(q) ||
+          paid.contains(q) ||
+          bal.contains(q);
+    }).toList();
 
     // Calculate total amount paid (either selected or grand total)
     double totalAmountPaid = 0;
@@ -102,11 +123,25 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
                 },
               )
             : null,
-        title: Text(
-          isSelectionMode
-              ? "${selectedIndices.length} Selected"
-              : "${widget.searchedTitle} Details",
-        ),
+        title: isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: "Search...",
+                  border: InputBorder.none,
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    searchQuery = val;
+                  });
+                },
+              )
+            : Text(
+                isSelectionMode
+                    ? "${selectedIndices.length} Selected"
+                    : "${widget.searchedTitle} Details",
+              ),
         actions: [
           if (isSelectionMode)
             IconButton(
@@ -119,6 +154,19 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
                     selectedIndices.addAll(
                       List.generate(titleData.length, (index) => index),
                     );
+                  }
+                });
+              },
+            ),
+          if (!isSelectionMode)
+            IconButton(
+              icon: Icon(isSearching ? Icons.close : Icons.search),
+              onPressed: () {
+                setState(() {
+                  isSearching = !isSearching;
+                  if (!isSearching) {
+                    searchQuery = "";
+                    _searchController.clear();
                   }
                 });
               },
