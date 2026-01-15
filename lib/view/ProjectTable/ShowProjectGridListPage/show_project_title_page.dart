@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'showtable/show_subproject_table_page.dart';
 import 'showtable/show_owner_table_page.dart';
+import 'showtable/show_total_project_table_page.dart';
 
 class ShowProjectTitlePage extends StatelessWidget {
   ShowProjectTitlePage({super.key});
@@ -80,7 +81,7 @@ class ShowProjectTitlePage extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 17),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,6 +106,7 @@ class ShowProjectTitlePage extends StatelessWidget {
                             ],
                           ),
                         ),
+
                         Icon(
                           Icons.arrow_forward_ios_rounded,
                           size: 16,
@@ -158,9 +160,86 @@ class ShowSubProjectTitlePage extends StatelessWidget {
           final subprojects = snapshot.data!.docs;
 
           return ListView.builder(
-            itemCount: subprojects.length + 1,
+            itemCount: subprojects.length + 2,
             itemBuilder: (context, index) {
               if (index == 0) {
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  elevation: 3,
+                  shadowColor: Colors.black26,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ShowTotalProjectTablePage(
+                            projectId: projectId,
+                            projectName: projectName,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.analytics,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Total Project Data",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  "View all subproject data and totals",
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              if (index == 1) {
                 return Card(
                   margin: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -214,7 +293,7 @@ class ShowSubProjectTitlePage extends StatelessWidget {
                                 ),
                                 SizedBox(height: 4),
                                 Text(
-                                  "View all owner history and payments",
+                                  "View all owner history & payments",
                                   style: TextStyle(
                                     color: Colors.grey,
                                     fontSize: 14,
@@ -235,7 +314,7 @@ class ShowSubProjectTitlePage extends StatelessWidget {
                 );
               }
 
-              final subDoc = subprojects[index - 1];
+              final subDoc = subprojects[index - 2];
               final data = subDoc.data() as Map<String, dynamic>;
               final title = data["title"] ?? "Untitled";
               final description = data["description"] ?? "No description";
