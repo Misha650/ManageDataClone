@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'showtable/show_subproject_table_page.dart';
+import 'showtable/show_owner_table_page.dart';
 
 class ShowProjectTitlePage extends StatelessWidget {
   ShowProjectTitlePage({super.key});
@@ -150,16 +151,91 @@ class ShowSubProjectTitlePage extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No sub-projects found"));
+          if (!snapshot.hasData) {
+            return const Center(child: Text("No data found"));
           }
 
           final subprojects = snapshot.data!.docs;
 
           return ListView.builder(
-            itemCount: subprojects.length,
+            itemCount: subprojects.length + 1,
             itemBuilder: (context, index) {
-              final subDoc = subprojects[index];
+              if (index == 0) {
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  elevation: 3,
+                  shadowColor: Colors.black26,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ShowOwnerTablePage(projectId: projectId),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.person,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Owner Details",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  "View all owner history and payments",
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              final subDoc = subprojects[index - 1];
               final data = subDoc.data() as Map<String, dynamic>;
               final title = data["title"] ?? "Untitled";
               final description = data["description"] ?? "No description";
@@ -199,7 +275,7 @@ class ShowSubProjectTitlePage extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                           child: Text(
-                            "${index + 1}",
+                            "$index",
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.bold,
