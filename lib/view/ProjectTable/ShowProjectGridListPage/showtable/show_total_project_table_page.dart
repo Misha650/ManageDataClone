@@ -135,11 +135,34 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
     });
   }
 
+  Widget _buildTwoTierHeader(String top, String bottom) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (top.isNotEmpty)
+          Text(
+            top,
+            style: const TextStyle(
+              fontSize: 10,
+              color: Colors.blueGrey,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        Text(
+          bottom,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Collect all unique keyTitles for columns
-    final Set<String> allKeys = {};
+    // Collect all unique (Subproject, KeyTitle) combinations
+    final Set<String> allCategoryKeys = {};
     for (var data in filteredData) {
+      final subName = data['subprojectName'] ?? "Untitled";
       for (var section in [
         'fields',
         'milestones',
@@ -149,12 +172,19 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
         final list = data[section] as List? ?? [];
         for (var item in list) {
           if (item is Map && item.containsKey('keyTitle')) {
-            allKeys.add(item['keyTitle']);
+            allCategoryKeys.add("$subName|${item['keyTitle']}");
           }
         }
       }
     }
-    final List<String> sortedKeys = allKeys.toList()..sort();
+
+    final List<String> sortedPairs = allCategoryKeys.toList()
+      ..sort((a, b) {
+        final splitA = a.split("|");
+        final splitB = b.split("|");
+        if (splitA[0] != splitB[0]) return splitA[0].compareTo(splitB[0]);
+        return splitA[1].compareTo(splitB[1]);
+      });
 
     double displayTotal = 0;
     if (selectedDocIds.isNotEmpty) {
@@ -241,6 +271,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                       child: DataTable(
                         showCheckboxColumn: false,
                         columnSpacing: 20,
+                        headingRowHeight: 60,
                         headingRowColor: WidgetStateProperty.all(
                           Theme.of(
                             context,
@@ -248,40 +279,20 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                         ),
                         columns: [
                           DataColumn(
-                            label: Text(
+                            label: _buildTwoTierHeader(
+                              "",
                               isSelectionMode ? "" : "Index",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
                             ),
                           ),
-                          const DataColumn(
-                            label: Text(
-                              "Date",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          const DataColumn(
-                            label: Text(
-                              "Category",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          ...sortedKeys.map(
-                            (key) => DataColumn(
-                              label: Text(
-                                key,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const DataColumn(
-                            label: Text(
-                              "Total Paid",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
+                          DataColumn(label: _buildTwoTierHeader("", "Date")),
+                          ...sortedPairs.map((pair) {
+                            final parts = pair.split("|");
+                            return DataColumn(
+                              label: _buildTwoTierHeader(parts[0], parts[1]),
+                            );
+                          }),
+                          DataColumn(
+                            label: _buildTwoTierHeader("", "Total Paid"),
                           ),
                         ],
                         rows: List.generate(filteredData.length, (index) {
@@ -293,6 +304,8 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                           final isSelected = selectedDocIds.contains(
                             data['id'],
                           );
+                          final rowSubproject =
+                              data['subprojectName'] ?? "Untitled";
 
                           return DataRow(
                             selected: isSelected,
@@ -337,42 +350,48 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                     : Text("${index + 1}"),
                               ),
                               DataCell(Text(dateStr)),
-                              DataCell(Text(data['subprojectName'] ?? "-")),
-                              ...sortedKeys.map((key) {
+                              ...sortedPairs.map((pair) {
+                                final parts = pair.split("|");
+                                final colSubproject = parts[0];
+                                final colKey = parts[1];
+
+                                // Only show value if this row's subproject matches the column's subproject
                                 String value = "";
-                                for (var section in [
-                                  'fields',
-                                  'milestones',
-                                  'dualFields',
-                                  'labourFields',
-                                ]) {
-                                  final list = data[section] as List? ?? [];
-                                  for (var item in list) {
-                                    if (item is Map &&
-                                        item['keyTitle'] == key) {
-                                      if (section == 'fields') {
-                                        value =
-                                            "${item['value'] ?? ''}, ${item['amountPaid'] ?? 0}";
-                                      } else if (section == 'milestones') {
-                                        value = "${item['amountPaid'] ?? 0}";
-                                      } else if (section == 'dualFields') {
-                                        final entries =
-                                            item['myValue'] as List? ?? [];
-                                        value = entries
-                                            .map(
-                                              (e) =>
-                                                  "${e['title']}, ${e['amountPaid']}",
-                                            )
-                                            .join(", ");
-                                      } else if (section == 'labourFields') {
-                                        final entries =
-                                            item['myValue'] as List? ?? [];
-                                        value = entries
-                                            .map(
-                                              (e) =>
-                                                  "${e['title']}, ${e['amountPaid']}",
-                                            )
-                                            .join(", ");
+                                if (rowSubproject == colSubproject) {
+                                  for (var section in [
+                                    'fields',
+                                    'milestones',
+                                    'dualFields',
+                                    'labourFields',
+                                  ]) {
+                                    final list = data[section] as List? ?? [];
+                                    for (var item in list) {
+                                      if (item is Map &&
+                                          item['keyTitle'] == colKey) {
+                                        if (section == 'fields') {
+                                          value =
+                                              "${item['value'] ?? ''}, ${item['amountPaid'] ?? 0}";
+                                        } else if (section == 'milestones') {
+                                          value = "${item['amountPaid'] ?? 0}";
+                                        } else if (section == 'dualFields') {
+                                          final entries =
+                                              item['myValue'] as List? ?? [];
+                                          value = entries
+                                              .map(
+                                                (e) =>
+                                                    "${e['title']}, ${e['amountPaid']}",
+                                              )
+                                              .join(", ");
+                                        } else if (section == 'labourFields') {
+                                          final entries =
+                                              item['myValue'] as List? ?? [];
+                                          value = entries
+                                              .map(
+                                                (e) =>
+                                                    "${e['title']}, ${e['amountPaid']}",
+                                              )
+                                              .join(", ");
+                                        }
                                       }
                                     }
                                   }
