@@ -304,6 +304,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
       });
 
     double displayTotal = 0;
+    double ownerTotal = 0;
     final entriesToSum = selectedDocIds.isNotEmpty
         ? allFormData.where((e) => selectedDocIds.contains(e['id']))
         : filteredData;
@@ -311,9 +312,11 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
     for (var groupedEntry in entriesToSum) {
       final docs = groupedEntry['docs'] as List? ?? [];
       for (var doc in docs) {
-        // Exclude Owner entries from the total count
+        final amount = (doc['totalAmountPaid'] as num? ?? 0).toDouble();
         if (doc['subprojectName'] != 'Owner') {
-          displayTotal += (doc['totalAmountPaid'] as num? ?? 0).toDouble();
+          displayTotal += amount;
+        } else {
+          ownerTotal += amount;
         }
       }
     }
@@ -602,26 +605,76 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                       ),
                     ),
                   ),
-                  child: Row(
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Text(
-                        "Total Amount: ",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                        ),
+                      // Owner Total Check
+                      Row(
+                        children: [
+                          Text(
+                            "Owner Amount: ",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                          Text(
+                            ownerTotal.toStringAsFixed(2),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red, // Distinct color for owner
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        displayTotal.toStringAsFixed(2),
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                      // Existing Total Amount
+                      Row(
+                        children: [
+                          Text(
+                            "Paid Amount: ",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                          Text(
+                            displayTotal.toStringAsFixed(2),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            "Balance Amount: ",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                          Text(
+                            (ownerTotal - displayTotal).toStringAsFixed(2),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
