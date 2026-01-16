@@ -304,15 +304,17 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
       });
 
     double displayTotal = 0;
-    if (selectedDocIds.isNotEmpty) {
-      for (var data in allFormData) {
-        if (selectedDocIds.contains(data['id'])) {
-          displayTotal += (data['totalAmountPaid'] as num? ?? 0).toDouble();
+    final entriesToSum = selectedDocIds.isNotEmpty
+        ? allFormData.where((e) => selectedDocIds.contains(e['id']))
+        : filteredData;
+
+    for (var groupedEntry in entriesToSum) {
+      final docs = groupedEntry['docs'] as List? ?? [];
+      for (var doc in docs) {
+        // Exclude Owner entries from the total count
+        if (doc['subprojectName'] != 'Owner') {
+          displayTotal += (doc['totalAmountPaid'] as num? ?? 0).toDouble();
         }
-      }
-    } else {
-      for (var data in filteredData) {
-        displayTotal += (data['totalAmountPaid'] as num? ?? 0).toDouble();
       }
     }
 
