@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:manage_data/view/add_detal/AddDetailInCardPage/AddDetailInCardPage.dart';
-import 'package:manage_data/view/add_detal/AddOwnerDetailPage.dart';
+import 'package:manage_data/view/add_detal/AddDetailInCardPage/AddOwnerDetailPage.dart';
 
 class SubProjectPageCard extends StatelessWidget {
   final String projectId; // ✅ Store projectId properly

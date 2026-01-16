@@ -83,6 +83,53 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
         }
       }
 
+      // --- Fetch Owner Details ---
+      final ownerSnap = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .collection("projects")
+          .doc(widget.projectId)
+          .collection("addOwnerDetail")
+          .get();
+
+      for (var ownerDoc in ownerSnap.docs) {
+        final data = ownerDoc.data();
+        final date = (data['date'] as Timestamp?)?.toDate();
+        final dateStr = date != null
+            ? DateFormat('dd/MM/yy').format(date)
+            : "N/A";
+        final amount = (data['amount'] as num? ?? 0).toDouble();
+        final description = data['description'] ?? "";
+
+        // Create a structure compatible with the existing rendering logic
+        final ownerEntry = {
+          'subprojectName': 'Owner',
+          'id': ownerDoc.id,
+          'date': data['date'],
+          'totalAmountPaid': amount,
+          'fields': [
+            {
+              'keyTitle': 'Owner Details',
+              'value': description,
+              'amountPaid': amount,
+            },
+          ],
+        };
+
+        if (!groupedData.containsKey(dateStr)) {
+          groupedData[dateStr] = {
+            'id': dateStr,
+            'date': data['date'],
+            'totalAmountPaid': amount,
+            'docs': [ownerEntry],
+          };
+        } else {
+          final entry = groupedData[dateStr]!;
+          entry['totalAmountPaid'] += amount;
+          (entry['docs'] as List).add(ownerEntry);
+        }
+      }
+
       final List<Map<String, dynamic>> finalData = groupedData.values.toList();
       finalData.sort((a, b) {
         final dateA = (a['date'] as Timestamp?)?.toDate() ?? DateTime(0);

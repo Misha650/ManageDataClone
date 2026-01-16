@@ -54,6 +54,28 @@ class _AddOwnerDetailPageState extends State<AddOwnerDetailPage> {
           .doc(widget.projectId)
           .collection('addOwnerDetail');
 
+      // Check for existing entry on the same date
+      final startOfDay = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+      );
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      final existingDocs = await collectionRef
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('date', isLessThan: Timestamp.fromDate(endOfDay))
+          .get();
+
+      if (existingDocs.docs.isNotEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Data for this date already exists')),
+          );
+        }
+        return;
+      }
+
       // Get the highest index
       final querySnapshot = await collectionRef
           .orderBy('index', descending: true)
