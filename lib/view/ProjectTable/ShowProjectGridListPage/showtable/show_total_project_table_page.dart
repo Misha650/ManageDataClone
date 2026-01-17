@@ -596,12 +596,18 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                 ),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 24,
-                    horizontal: 16,
+                  padding: const EdgeInsets.only(
+                    top: 30,
+                    bottom: 10,
+                    left: 16,
+                    right: 16,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
@@ -610,6 +616,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                       ),
                     ],
                   ),
+
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -617,25 +624,25 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                       // Owner Amount Card
                       _buildSummaryCard(
                         context,
-                        // title: "Owner Amount",
+                        title: "Owner Amount",
                         amount: ownerTotal,
                         color: Colors.redAccent,
                         icon: Icons.person_outline,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 7),
                       // Paid Amount Card
                       _buildSummaryCard(
                         context,
-                        // title: "Paid Amount",
+                        title: "Paid Amount",
                         amount: displayTotal,
                         color: Colors.blueAccent,
                         icon: Icons.check_circle_outline,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 7),
                       // Balance Amount Card
                       _buildSummaryCard(
                         context,
-                        // title: "Balance Amount",
+                        title: "Balance Amount",
                         amount: ownerTotal - displayTotal,
                         color: Colors.green,
                         icon: Icons.account_balance_wallet_outlined,
@@ -672,57 +679,86 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
 
   Widget _buildSummaryCard(
     BuildContext context, {
-
+    required String title,
     required double amount,
     required Color color,
     required IconData icon,
   }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 0.0),
-      padding: const EdgeInsets.all(16.0),
+    return Tooltip(
+      message: NumberToWords.convert(amount),
+      padding: const EdgeInsets.all(12),
+      textStyle: const TextStyle(color: Colors.white, fontSize: 13),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            offset: const Offset(0, 4),
-            blurRadius: 12,
-          ),
-        ],
+        color: Colors.grey[800],
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(width: 8),
 
-          Tooltip(
-            message: NumberToWords.convert(amount),
-            padding: const EdgeInsets.all(12),
-            textStyle: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: BoxDecoration(
-              color: Colors.grey[800],
-              borderRadius: BorderRadius.circular(8),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 0.0),
+        padding: const EdgeInsets.only(
+          top: 2.0,
+          bottom: 8.0,
+          left: 16.0,
+          right: 16.0,
+        ),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.05),
+
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              offset: const Offset(0, 4),
+              blurRadius: 12,
             ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                NumberToWords.formatAmount(amount),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                  fontFamily: 'Roboto',
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 35),
+            const SizedBox(width: 4),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                    fontFamily: 'Roboto',
+                  ),
                 ),
-              ),
+
+                const SizedBox(width: 4),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    NumberToWords.formatAmount(amount),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                      fontFamily: 'Roboto',
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
