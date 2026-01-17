@@ -616,6 +616,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                       duration: const Duration(milliseconds: 50),
                       height: _containerHeight,
                       width: double.infinity,
+                      clipBehavior: Clip.hardEdge,
                       padding: const EdgeInsets.only(
                         top: 10,
                         bottom: 10,
@@ -623,43 +624,48 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                         right: 16,
                       ),
                       decoration: AppBoxDecorationStyle.whiteRoundBoxDecoration,
-
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Align(
-                            alignment: Alignment.center,
-                            child: AppBoxDecorationStyle.smallgreyBoxDecoration,
-                          ),
-                          const SizedBox(height: 20),
-                          // Owner Amount Card
-                          _buildSummaryCard(
-                            context,
-                            title: "Owner Amount",
-                            amount: ownerTotal,
-                            color: Colors.redAccent,
-                            icon: Icons.person_outline,
-                          ),
-                          const SizedBox(height: 7),
-                          // Paid Amount Card
-                          _buildSummaryCard(
-                            context,
-                            title: "Paid Amount",
-                            amount: displayTotal,
-                            color: Colors.blueAccent,
-                            icon: Icons.check_circle_outline,
-                          ),
-                          const SizedBox(height: 7),
-                          // Balance Amount Card
-                          _buildSummaryCard(
-                            context,
-                            title: "Balance Amount",
-                            amount: ownerTotal - displayTotal,
-                            color: Colors.green,
-                            icon: Icons.account_balance_wallet_outlined,
-                          ),
-                        ],
+                      child: OverflowBox(
+                        alignment: Alignment.topCenter,
+                        maxHeight: double.infinity,
+                        minHeight: 0,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Align(
+                              alignment: Alignment.center,
+                              child:
+                                  AppBoxDecorationStyle.smallgreyBoxDecoration,
+                            ),
+                            const SizedBox(height: 20),
+                            // Owner Amount Card
+                            _buildSummaryCard(
+                              context,
+                              title: "Owner Amount",
+                              amount: ownerTotal,
+                              color: Colors.redAccent,
+                              icon: Icons.person_outline,
+                            ),
+                            const SizedBox(height: 7),
+                            // Paid Amount Card
+                            _buildSummaryCard(
+                              context,
+                              title: "Paid Amount",
+                              amount: displayTotal,
+                              color: Colors.blueAccent,
+                              icon: Icons.check_circle_outline,
+                            ),
+                            const SizedBox(height: 7),
+                            // Balance Amount Card
+                            _buildSummaryCard(
+                              context,
+                              title: "Balance Amount",
+                              amount: ownerTotal - displayTotal,
+                              color: Colors.green,
+                              icon: Icons.account_balance_wallet_outlined,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -711,13 +717,12 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
         padding: const EdgeInsets.only(
           top: 2.0,
           bottom: 8.0,
-          left: 16.0,
-          right: 16.0,
+          left: 15.0,
+          right: 15.0,
         ),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
-
-          borderRadius: BorderRadius.circular(16),
+          //   color: color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(40),
           border: Border.all(color: color.withOpacity(0.3), width: 1.5),
           boxShadow: [
             BoxShadow(
@@ -756,7 +761,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                     ),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      //  borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       NumberToWords.formatAmount(amount),

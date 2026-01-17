@@ -33,14 +33,13 @@ class AppBoxDecorationStyle {
   );
 
   static BoxDecoration whiteRoundBoxDecoration = BoxDecoration(
-    color: Colors.white,
     borderRadius: BorderRadius.only(
       topLeft: Radius.circular(50),
       topRight: Radius.circular(50),
     ),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.05),
+        color: const Color.fromARGB(255, 71, 71, 71).withOpacity(0.05),
         offset: const Offset(0, -4),
         blurRadius: 16,
       ),
