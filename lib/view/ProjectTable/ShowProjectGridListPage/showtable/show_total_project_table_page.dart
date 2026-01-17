@@ -617,7 +617,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                       // Owner Amount Card
                       _buildSummaryCard(
                         context,
-                        title: "Owner Amount",
+                        // title: "Owner Amount",
                         amount: ownerTotal,
                         color: Colors.redAccent,
                         icon: Icons.person_outline,
@@ -626,7 +626,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                       // Paid Amount Card
                       _buildSummaryCard(
                         context,
-                        title: "Paid Amount",
+                        // title: "Paid Amount",
                         amount: displayTotal,
                         color: Colors.blueAccent,
                         icon: Icons.check_circle_outline,
@@ -635,7 +635,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                       // Balance Amount Card
                       _buildSummaryCard(
                         context,
-                        title: "Balance Amount",
+                        // title: "Balance Amount",
                         amount: ownerTotal - displayTotal,
                         color: Colors.green,
                         icon: Icons.account_balance_wallet_outlined,
@@ -672,7 +672,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
 
   Widget _buildSummaryCard(
     BuildContext context, {
-    required String title,
+
     required double amount,
     required Color color,
     required IconData icon,
@@ -692,21 +692,11 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
           Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
-              letterSpacing: 0.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(width: 8),
+
           Tooltip(
             message: NumberToWords.convert(amount),
             padding: const EdgeInsets.all(12),
