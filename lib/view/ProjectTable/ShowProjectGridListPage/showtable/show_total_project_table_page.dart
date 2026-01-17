@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:manage_data/res/components/boxdecoration.dart';
+import 'package:manage_data/controller/project_cache_controller.dart';
 import '../../../../utils/number_to_words.dart';
 
 //misha
@@ -37,13 +38,27 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
   final double _minHeight = 50.0;
   final double _maxHeight = 350.0;
 
+  final ProjectCacheController _cache = ProjectCacheController();
+
   @override
   void initState() {
     super.initState();
+    // Load from cache first
+    final cachedData = _cache.getData(widget.projectId);
+    if (cachedData != null) {
+      allFormData = cachedData;
+      filteredData = cachedData;
+      isLoading = false;
+    }
     _fetchTotalData();
   }
 
   Future<void> _fetchTotalData() async {
+    // Only show loading if we don't have cached data
+    if (allFormData.isEmpty) {
+      setState(() => isLoading = true);
+    }
+
     try {
       final subprojectsSnap = await FirebaseFirestore.instance
           .collection("users")
@@ -144,20 +159,27 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
         return dateB.compareTo(dateA);
       });
 
-      setState(() {
-        allFormData = finalData;
-        filteredData = finalData;
-        isLoading = false;
-      });
+      // Update cache
+      _cache.setData(widget.projectId, finalData);
+
+      if (mounted) {
+        setState(() {
+          allFormData = finalData;
+          filteredData = finalData;
+          isLoading = false;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("Error fetching data: $e")));
       }
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -419,12 +441,17 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                           children: [
                             // --- Header Row 1: Categories (Yellow) ---
                             TableRow(
-                              decoration: const BoxDecoration(
-                                color: Colors.yellow,
+                              decoration: BoxDecoration(
+                                color: const Color.fromARGB(
+                                  255,
+                                  137,
+                                  48,
+                                  155,
+                                ).withOpacity(0.1),
                               ),
                               children: [
-                                _buildHeaderCell("Index"),
-                                _buildHeaderCell("Date"),
+                                _buildHeaderCell(""),
+                                _buildHeaderCell(""),
                                 ...sortedPairs.map((pair) {
                                   final parts = pair.split("|");
                                   return _buildHeaderCell(parts[0]);
@@ -444,7 +471,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                               ),
                               children: [
                                 _buildHeaderCell(""),
-                                _buildHeaderCell(""),
+                                _buildHeaderCell("Date"),
                                 ...sortedPairs.map((pair) {
                                   final parts = pair.split("|");
                                   return _buildHeaderCell(parts[1]);
