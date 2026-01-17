@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'show_title_project_table_page.dart';
+import 'package:manage_data/controller/sub_project_cache_controller.dart';
 
 class ShowSubProjectTablePage extends StatefulWidget {
   final String projectId;
@@ -31,6 +32,7 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
   String searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
   late Stream<QuerySnapshot> _stream;
+  final SubProjectCacheController _cache = SubProjectCacheController();
 
   @override
   void initState() {
@@ -53,12 +55,30 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
     return StreamBuilder<QuerySnapshot>(
       stream: _stream,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+        final cachedDocs = _cache.getDocs(
+          widget.projectId,
+          widget.subprojectId,
+        );
+
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            cachedDocs == null) {
+          return Scaffold(
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+
+        if (snapshot.hasData) {
+          _cache.setDocs(
+            widget.projectId,
+            widget.subprojectId,
+            snapshot.data!.docs.cast<QueryDocumentSnapshot>(),
+          );
+        }
+
+        final allDocs =
+            _cache.getDocs(widget.projectId, widget.subprojectId) ?? [];
+
+        if (allDocs.isEmpty) {
           return Scaffold(
             appBar: AppBar(
               title: isSearching
@@ -69,7 +89,7 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                         hintText: "Search...",
                         border: InputBorder.none,
                       ),
-                      style: const TextStyle(color: Colors.white),
+                      // style: const TextStyle(color: Colors.white),
                       onChanged: (val) {
                         setState(() {
                           searchQuery = val;
@@ -95,8 +115,6 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
             body: const Center(child: Text("No data found")),
           );
         }
-
-        final allDocs = snapshot.data!.docs;
 
         // Filtering logic
         final filteredDocs = allDocs.where((doc) {
@@ -515,7 +533,6 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                                   subprojectId: widget.subprojectId,
                                   subprojectName: widget.subprojectName,
                                   searchedTitle: searchQuery,
-                                  allDocs: allDocs,
                                 ),
                               ),
                             );
