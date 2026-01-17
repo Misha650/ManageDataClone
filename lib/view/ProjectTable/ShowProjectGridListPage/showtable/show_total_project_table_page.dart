@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:manage_data/res/components/boxdecoration.dart';
 import '../../../../utils/number_to_words.dart';
 
 //misha
@@ -28,6 +29,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
   Set<String> selectedDocIds = {};
   bool isSelectionMode = false;
   bool isSearching = false;
+  bool isSummaryVisible = true;
   String searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
 
@@ -594,62 +596,60 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                     ),
                   ),
                 ),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.only(
-                    top: 30,
-                    bottom: 10,
-                    left: 16,
-                    right: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
+                if (isSummaryVisible)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.only(
+                      top: 30,
+                      bottom: 10,
+                      left: 16,
+                      right: 16,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        offset: const Offset(0, -4),
-                        blurRadius: 16,
-                      ),
-                    ],
+                    decoration: AppBoxDecorationStyle.whiteRoundBoxDecoration,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              isSummaryVisible = !isSummaryVisible;
+                            });
+                          },
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: AppBoxDecorationStyle.smallgreyBoxDecoration,
+                          ),
+                        ),
+                        // Owner Amount Card
+                        _buildSummaryCard(
+                          context,
+                          title: "Owner Amount",
+                          amount: ownerTotal,
+                          color: Colors.redAccent,
+                          icon: Icons.person_outline,
+                        ),
+                        const SizedBox(height: 7),
+                        // Paid Amount Card
+                        _buildSummaryCard(
+                          context,
+                          title: "Paid Amount",
+                          amount: displayTotal,
+                          color: Colors.blueAccent,
+                          icon: Icons.check_circle_outline,
+                        ),
+                        const SizedBox(height: 7),
+                        // Balance Amount Card
+                        _buildSummaryCard(
+                          context,
+                          title: "Balance Amount",
+                          amount: ownerTotal - displayTotal,
+                          color: Colors.green,
+                          icon: Icons.account_balance_wallet_outlined,
+                        ),
+                      ],
+                    ),
                   ),
-
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Owner Amount Card
-                      _buildSummaryCard(
-                        context,
-                        title: "Owner Amount",
-                        amount: ownerTotal,
-                        color: Colors.redAccent,
-                        icon: Icons.person_outline,
-                      ),
-                      const SizedBox(height: 7),
-                      // Paid Amount Card
-                      _buildSummaryCard(
-                        context,
-                        title: "Paid Amount",
-                        amount: displayTotal,
-                        color: Colors.blueAccent,
-                        icon: Icons.check_circle_outline,
-                      ),
-                      const SizedBox(height: 7),
-                      // Balance Amount Card
-                      _buildSummaryCard(
-                        context,
-                        title: "Balance Amount",
-                        amount: ownerTotal - displayTotal,
-                        color: Colors.green,
-                        icon: Icons.account_balance_wallet_outlined,
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
     );
@@ -720,42 +720,43 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
           children: [
             Icon(icon, color: color, size: 35),
             const SizedBox(width: 4),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                    fontFamily: 'Roboto',
-                  ),
-                ),
-
-                const SizedBox(width: 4),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    NumberToWords.formatAmount(amount),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: color,
                       fontFamily: 'Roboto',
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      NumberToWords.formatAmount(amount),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                        fontFamily: 'Roboto',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
