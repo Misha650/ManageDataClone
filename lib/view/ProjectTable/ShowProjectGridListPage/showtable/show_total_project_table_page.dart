@@ -464,50 +464,56 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                               );
                               final docs = groupedEntry['docs'] as List? ?? [];
 
+                              final onRowTap = () {
+                                if (isSelectionMode) {
+                                  setState(() {
+                                    if (isSelected) {
+                                      selectedDocIds.remove(groupedEntry['id']);
+                                    } else {
+                                      selectedDocIds.add(groupedEntry['id']);
+                                    }
+                                    if (selectedDocIds.isEmpty) {
+                                      isSelectionMode = false;
+                                    }
+                                  });
+                                }
+                              };
+
+                              final onRowLongPress = () {
+                                if (!isSelectionMode) {
+                                  setState(() {
+                                    isSelectionMode = true;
+                                    selectedDocIds.add(groupedEntry['id']);
+                                  });
+                                }
+                              };
+
                               return TableRow(
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? Colors.blue.withOpacity(0.2)
+                                      ? Colors.blue.withOpacity(0.1)
                                       : null,
                                 ),
                                 children: [
                                   // Index / Checkbox Cell
                                   _buildDataCell(
-                                    GestureDetector(
-                                      onLongPress: () {
-                                        if (!isSelectionMode) {
-                                          setState(() {
-                                            isSelectionMode = true;
-                                            selectedDocIds.add(
-                                              groupedEntry['id'],
-                                            );
-                                          });
-                                        }
-                                      },
-                                      child: isSelectionMode
-                                          ? Checkbox(
-                                              value: isSelected,
-                                              onChanged: (val) {
-                                                setState(() {
-                                                  if (val == true) {
-                                                    selectedDocIds.add(
-                                                      groupedEntry['id'],
-                                                    );
-                                                  } else {
-                                                    selectedDocIds.remove(
-                                                      groupedEntry['id'],
-                                                    );
-                                                  }
-                                                  if (selectedDocIds.isEmpty)
-                                                    isSelectionMode = false;
-                                                });
-                                              },
-                                            )
-                                          : Text("${index + 1}"),
-                                    ),
+                                    isSelectionMode
+                                        ? Checkbox(
+                                            value: isSelected,
+                                            onChanged: (val) {
+                                              onRowTap();
+                                            },
+                                          )
+                                        : Text("${index + 1}"),
+                                    onTap: onRowTap,
+                                    onLongPress: onRowLongPress,
                                   ),
                                   // Date Cell
-                                  _buildDataCell(Text(dateStr)),
+                                  _buildDataCell(
+                                    Text(dateStr),
+                                    onTap: onRowTap,
+                                    onLongPress: onRowLongPress,
+                                  ),
                                   // Dynamic Key Value Cells
                                   ...sortedPairs.map((pair) {
                                     final parts = pair.split("|");
@@ -580,6 +586,8 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                             : displayValue,
                                         textAlign: TextAlign.start,
                                       ),
+                                      onTap: onRowTap,
+                                      onLongPress: onRowLongPress,
                                     );
                                   }),
                                   // Total Paid Cell
@@ -590,6 +598,8 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
+                                    onTap: onRowTap,
+                                    onLongPress: onRowLongPress,
                                   ),
                                 ],
                               );
@@ -689,12 +699,20 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
     );
   }
 
-  Widget _buildDataCell(Widget child) {
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      constraints: const BoxConstraints(minHeight: 48),
-      alignment: Alignment.centerLeft,
-      child: child,
+  Widget _buildDataCell(
+    Widget child, {
+    VoidCallback? onTap,
+    VoidCallback? onLongPress,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Container(
+        padding: const EdgeInsets.all(8.0),
+        constraints: const BoxConstraints(minHeight: 48),
+        alignment: Alignment.centerLeft,
+        child: child,
+      ),
     );
   }
 
