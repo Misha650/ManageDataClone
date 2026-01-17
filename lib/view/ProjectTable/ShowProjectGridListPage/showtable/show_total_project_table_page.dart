@@ -623,7 +623,9 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                         left: 16,
                         right: 16,
                       ),
-                      decoration: AppBoxDecorationStyle.whiteRoundBoxDecoration,
+                      decoration: AppBoxDecorationStyle.getAdaptiveDecoration(
+                        context,
+                      ),
                       child: OverflowBox(
                         alignment: Alignment.topCenter,
                         maxHeight: double.infinity,

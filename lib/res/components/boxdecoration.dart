@@ -32,17 +32,24 @@ class AppBoxDecorationStyle {
     ),
   );
 
-  static BoxDecoration whiteRoundBoxDecoration = BoxDecoration(
-    borderRadius: BorderRadius.only(
-      topLeft: Radius.circular(50),
-      topRight: Radius.circular(50),
-    ),
-    boxShadow: [
-      BoxShadow(
-        color: const Color.fromARGB(255, 71, 71, 71).withOpacity(0.05),
-        offset: const Offset(0, -4),
-        blurRadius: 16,
+  static BoxDecoration getAdaptiveDecoration(BuildContext context) {
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return BoxDecoration(
+      color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(50),
+        topRight: Radius.circular(50),
       ),
-    ],
-  );
+      boxShadow: [
+        BoxShadow(
+          color: isDarkMode
+              ? Colors.white.withOpacity(0.02)
+              : Colors.black.withOpacity(0.1),
+          offset: const Offset(0, -4),
+          blurRadius: 20,
+          spreadRadius: 2,
+        ),
+      ],
+    );
+  }
 }
