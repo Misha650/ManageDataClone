@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../../utils/number_to_words.dart';
 
 //misha
 class ShowTotalProjectTablePage extends StatefulWidget {
@@ -605,7 +606,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                       ),
                     ),
                   ),
-                  child: Column(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       // Owner Total Check
@@ -621,16 +622,20 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                               ).colorScheme.onPrimaryContainer,
                             ),
                           ),
-                          Text(
-                            ownerTotal.toStringAsFixed(2),
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red, // Distinct color for owner
+                          Tooltip(
+                            message: NumberToWords.convert(ownerTotal),
+                            child: Text(
+                              NumberToWords.formatAmount(ownerTotal),
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red, // Distinct color for owner
+                              ),
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(width: 20),
                       // Existing Total Amount
                       Row(
                         children: [
@@ -644,16 +649,20 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                               ).colorScheme.onPrimaryContainer,
                             ),
                           ),
-                          Text(
-                            displayTotal.toStringAsFixed(2),
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
+                          Tooltip(
+                            message: NumberToWords.convert(displayTotal),
+                            child: Text(
+                              NumberToWords.formatAmount(displayTotal),
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(width: 20),
                       Row(
                         children: [
                           Text(
@@ -666,12 +675,19 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                               ).colorScheme.onPrimaryContainer,
                             ),
                           ),
-                          Text(
-                            (ownerTotal - displayTotal).toStringAsFixed(2),
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
+                          Tooltip(
+                            message: NumberToWords.convert(
+                              (ownerTotal - displayTotal),
+                            ),
+                            child: Text(
+                              NumberToWords.formatAmount(
+                                ownerTotal - displayTotal,
+                              ),
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                             ),
                           ),
                         ],
