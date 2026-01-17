@@ -376,18 +376,19 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                 });
               },
             ),
-          IconButton(
-            icon: Icon(isSearching ? Icons.close : Icons.search),
-            onPressed: () {
-              setState(() {
-                isSearching = !isSearching;
-                if (!isSearching) {
-                  _filterData("");
-                  _searchController.clear();
-                }
-              });
-            },
-          ),
+          if (!isSelectionMode)
+            IconButton(
+              icon: Icon(isSearching ? Icons.close : Icons.search),
+              onPressed: () {
+                setState(() {
+                  isSearching = !isSearching;
+                  if (!isSearching) {
+                    _filterData("");
+                    _searchController.clear();
+                  }
+                });
+              },
+            ),
         ],
       ),
       body: isLoading
@@ -484,6 +485,10 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                   setState(() {
                                     isSelectionMode = true;
                                     selectedDocIds.add(groupedEntry['id']);
+                                    // Hide search and reset filter when selecting
+                                    isSearching = false;
+                                    _searchController.clear();
+                                    _filterData("");
                                   });
                                 }
                               };
