@@ -596,101 +596,49 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                 ),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    border: Border(
-                      top: BorderSide(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 2,
-                      ),
-                    ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 24,
+                    horizontal: 16,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        offset: const Offset(0, -4),
+                        blurRadius: 16,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Owner Total Check
-                      Row(
-                        children: [
-                          Text(
-                            "Owner Amount: ",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onPrimaryContainer,
-                            ),
-                          ),
-                          Tooltip(
-                            message: NumberToWords.convert(ownerTotal),
-                            child: Text(
-                              NumberToWords.formatAmount(ownerTotal),
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red, // Distinct color for owner
-                              ),
-                            ),
-                          ),
-                        ],
+                      // Owner Amount Card
+                      _buildSummaryCard(
+                        context,
+                        title: "Owner Amount",
+                        amount: ownerTotal,
+                        color: Colors.redAccent,
+                        icon: Icons.person_outline,
                       ),
-                      const SizedBox(width: 20),
-                      // Existing Total Amount
-                      Row(
-                        children: [
-                          Text(
-                            "Paid Amount: ",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onPrimaryContainer,
-                            ),
-                          ),
-                          Tooltip(
-                            message: NumberToWords.convert(displayTotal),
-                            child: Text(
-                              NumberToWords.formatAmount(displayTotal),
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 12),
+                      // Paid Amount Card
+                      _buildSummaryCard(
+                        context,
+                        title: "Paid Amount",
+                        amount: displayTotal,
+                        color: Colors.blueAccent,
+                        icon: Icons.check_circle_outline,
                       ),
-                      const SizedBox(width: 20),
-                      Row(
-                        children: [
-                          Text(
-                            "Balance Amount: ",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onPrimaryContainer,
-                            ),
-                          ),
-                          Tooltip(
-                            message: NumberToWords.convert(
-                              (ownerTotal - displayTotal),
-                            ),
-                            child: Text(
-                              NumberToWords.formatAmount(
-                                ownerTotal - displayTotal,
-                              ),
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 12),
+                      // Balance Amount Card
+                      _buildSummaryCard(
+                        context,
+                        title: "Balance Amount",
+                        amount: ownerTotal - displayTotal,
+                        color: Colors.green,
+                        icon: Icons.account_balance_wallet_outlined,
                       ),
                     ],
                   ),
@@ -719,6 +667,73 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
       constraints: const BoxConstraints(minHeight: 48),
       alignment: Alignment.centerLeft,
       child: child,
+    );
+  }
+
+  Widget _buildSummaryCard(
+    BuildContext context, {
+    required String title,
+    required double amount,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 0.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            offset: const Offset(0, 4),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+              letterSpacing: 0.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Tooltip(
+            message: NumberToWords.convert(amount),
+            padding: const EdgeInsets.all(12),
+            textStyle: const TextStyle(color: Colors.white, fontSize: 13),
+            decoration: BoxDecoration(
+              color: Colors.grey[800],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                NumberToWords.formatAmount(amount),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                  fontFamily: 'Roboto',
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
