@@ -33,6 +33,10 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
   String searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
 
+  double _containerHeight = 250.0;
+  final double _minHeight = 50.0;
+  final double _maxHeight = 350.0;
+
   @override
   void initState() {
     super.initState();
@@ -597,57 +601,68 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                   ),
                 ),
                 if (isSummaryVisible)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.only(
-                      top: 30,
-                      bottom: 10,
-                      left: 16,
-                      right: 16,
-                    ),
-                    decoration: AppBoxDecorationStyle.whiteRoundBoxDecoration,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        InkWell(
-                          onTap: () {
-                            setState(() {
-                              isSummaryVisible = !isSummaryVisible;
-                            });
-                          },
-                          child: Align(
-                            alignment: Alignment.center,
-                            child: AppBoxDecorationStyle.smallgreyBoxDecoration,
-                          ),
+                  GestureDetector(
+                    onVerticalDragUpdate: (details) {
+                      setState(() {
+                        _containerHeight -= details.delta.dy;
+                        if (_containerHeight < _minHeight) {
+                          _containerHeight = _minHeight;
+                        } else if (_containerHeight > _maxHeight) {
+                          _containerHeight = _maxHeight;
+                        }
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 50),
+                      height: _containerHeight,
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(
+                        top: 10,
+                        bottom: 10,
+                        left: 16,
+                        right: 16,
+                      ),
+                      decoration: AppBoxDecorationStyle.whiteRoundBoxDecoration,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Align(
+                              alignment: Alignment.center,
+                              child:
+                                  AppBoxDecorationStyle.smallgreyBoxDecoration,
+                            ),
+                            const SizedBox(height: 20),
+                            // Owner Amount Card
+                            _buildSummaryCard(
+                              context,
+                              title: "Owner Amount",
+                              amount: ownerTotal,
+                              color: Colors.redAccent,
+                              icon: Icons.person_outline,
+                            ),
+                            const SizedBox(height: 7),
+                            // Paid Amount Card
+                            _buildSummaryCard(
+                              context,
+                              title: "Paid Amount",
+                              amount: displayTotal,
+                              color: Colors.blueAccent,
+                              icon: Icons.check_circle_outline,
+                            ),
+                            const SizedBox(height: 7),
+                            // Balance Amount Card
+                            _buildSummaryCard(
+                              context,
+                              title: "Balance Amount",
+                              amount: ownerTotal - displayTotal,
+                              color: Colors.green,
+                              icon: Icons.account_balance_wallet_outlined,
+                            ),
+                          ],
                         ),
-                        // Owner Amount Card
-                        _buildSummaryCard(
-                          context,
-                          title: "Owner Amount",
-                          amount: ownerTotal,
-                          color: Colors.redAccent,
-                          icon: Icons.person_outline,
-                        ),
-                        const SizedBox(height: 7),
-                        // Paid Amount Card
-                        _buildSummaryCard(
-                          context,
-                          title: "Paid Amount",
-                          amount: displayTotal,
-                          color: Colors.blueAccent,
-                          icon: Icons.check_circle_outline,
-                        ),
-                        const SizedBox(height: 7),
-                        // Balance Amount Card
-                        _buildSummaryCard(
-                          context,
-                          title: "Balance Amount",
-                          amount: ownerTotal - displayTotal,
-                          color: Colors.green,
-                          icon: Icons.account_balance_wallet_outlined,
-                        ),
-                      ],
+                      ),
                     ),
                   ),
               ],
