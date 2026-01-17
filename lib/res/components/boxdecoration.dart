@@ -14,13 +14,13 @@ class AppBoxDecorationStyle {
 
   static Widget smallgreyBoxDecoration = Container(
     height: 10,
-    width: 150,
+    width: 100,
     decoration: BoxDecoration(
-      border: Border.all(color: Colors.grey),
-      color: Colors.grey,
+      border: Border.all(color: Colors.grey.shade200),
+      color: Colors.grey.shade200.withValues(alpha: 0.5),
       borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(20),
-        topRight: Radius.circular(20),
+        topLeft: Radius.circular(40),
+        topRight: Radius.circular(40),
       ),
       boxShadow: [
         BoxShadow(
@@ -35,8 +35,8 @@ class AppBoxDecorationStyle {
   static BoxDecoration whiteRoundBoxDecoration = BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.only(
-      topLeft: Radius.circular(20),
-      topRight: Radius.circular(20),
+      topLeft: Radius.circular(50),
+      topRight: Radius.circular(50),
     ),
     boxShadow: [
       BoxShadow(

@@ -623,45 +623,43 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                         right: 16,
                       ),
                       decoration: AppBoxDecorationStyle.whiteRoundBoxDecoration,
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Align(
-                              alignment: Alignment.center,
-                              child:
-                                  AppBoxDecorationStyle.smallgreyBoxDecoration,
-                            ),
-                            const SizedBox(height: 20),
-                            // Owner Amount Card
-                            _buildSummaryCard(
-                              context,
-                              title: "Owner Amount",
-                              amount: ownerTotal,
-                              color: Colors.redAccent,
-                              icon: Icons.person_outline,
-                            ),
-                            const SizedBox(height: 7),
-                            // Paid Amount Card
-                            _buildSummaryCard(
-                              context,
-                              title: "Paid Amount",
-                              amount: displayTotal,
-                              color: Colors.blueAccent,
-                              icon: Icons.check_circle_outline,
-                            ),
-                            const SizedBox(height: 7),
-                            // Balance Amount Card
-                            _buildSummaryCard(
-                              context,
-                              title: "Balance Amount",
-                              amount: ownerTotal - displayTotal,
-                              color: Colors.green,
-                              icon: Icons.account_balance_wallet_outlined,
-                            ),
-                          ],
-                        ),
+
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Align(
+                            alignment: Alignment.center,
+                            child: AppBoxDecorationStyle.smallgreyBoxDecoration,
+                          ),
+                          const SizedBox(height: 20),
+                          // Owner Amount Card
+                          _buildSummaryCard(
+                            context,
+                            title: "Owner Amount",
+                            amount: ownerTotal,
+                            color: Colors.redAccent,
+                            icon: Icons.person_outline,
+                          ),
+                          const SizedBox(height: 7),
+                          // Paid Amount Card
+                          _buildSummaryCard(
+                            context,
+                            title: "Paid Amount",
+                            amount: displayTotal,
+                            color: Colors.blueAccent,
+                            icon: Icons.check_circle_outline,
+                          ),
+                          const SizedBox(height: 7),
+                          // Balance Amount Card
+                          _buildSummaryCard(
+                            context,
+                            title: "Balance Amount",
+                            amount: ownerTotal - displayTotal,
+                            color: Colors.green,
+                            icon: Icons.account_balance_wallet_outlined,
+                          ),
+                        ],
                       ),
                     ),
                   ),
