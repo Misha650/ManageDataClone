@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:manage_data/res/components/boxdecoration.dart';
 import 'package:manage_data/controller/project_cache_controller.dart';
 import '../../../../utils/number_to_words.dart';
+import '../../../add_detal/AddDetailInCardPage/AddDetailInCardPage.dart';
 
 //misha
 class ShowTotalProjectTablePage extends StatefulWidget {
@@ -82,25 +83,26 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
               ? DateFormat('dd/MM/yy').format(date)
               : "N/A";
 
+          final entryData = {
+            ...data,
+            'subprojectName': subprojectName,
+            'subprojectId': subDoc.id,
+            'id': formDoc.id,
+          };
+
           if (!groupedData.containsKey(dateStr)) {
             groupedData[dateStr] = {
               'id': dateStr,
               'date': data['date'],
               'totalAmountPaid': (data['totalAmountPaid'] as num? ?? 0)
                   .toDouble(),
-              'docs': [
-                {...data, 'subprojectName': subprojectName, 'id': formDoc.id},
-              ],
+              'docs': [entryData],
             };
           } else {
             final entry = groupedData[dateStr]!;
             entry['totalAmountPaid'] += (data['totalAmountPaid'] as num? ?? 0)
                 .toDouble();
-            (entry['docs'] as List).add({
-              ...data,
-              'subprojectName': subprojectName,
-              'id': formDoc.id,
-            });
+            (entry['docs'] as List).add(entryData);
           }
         }
       }
@@ -181,6 +183,233 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
         });
       }
     }
+  }
+
+  Future<void> _confirmDeleteGroup(List docs, String dateStr) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirm Delete"),
+        content: Text(
+          "Are you sure you want to delete all ${docs.length} records for $dateStr?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text("Delete All"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        for (var doc in docs) {
+          final docId = doc['id'];
+          final subName = doc['subprojectName'];
+          final subId = doc['subprojectId'];
+
+          if (subName == 'Owner') {
+            await FirebaseFirestore.instance
+                .collection("users")
+                .doc(uid)
+                .collection("projects")
+                .doc(widget.projectId)
+                .collection("addOwnerDetail")
+                .doc(docId)
+                .delete();
+          } else {
+            await FirebaseFirestore.instance
+                .collection("users")
+                .doc(uid)
+                .collection("projects")
+                .doc(widget.projectId)
+                .collection("subprojects")
+                .doc(subId)
+                .collection("formData")
+                .doc(docId)
+                .delete();
+          }
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Records deleted")));
+        }
+        _fetchTotalData(); // Refresh list
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Error deleting: $e")));
+        }
+      }
+    }
+  }
+
+  Future<void> _showUpdateDocsDialog(List docs) async {
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Update Records"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: docs.length,
+              separatorBuilder: (_, __) => const Divider(),
+              itemBuilder: (context, index) {
+                final doc = docs[index];
+                final subName = doc['subprojectName'];
+                final amount = (doc['totalAmountPaid'] ?? doc['amount'] ?? 0);
+
+                return ListTile(
+                  title: Text(subName),
+                  subtitle: Text("Amount: $amount"),
+                  trailing: const Icon(Icons.edit, color: Colors.blue),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    if (subName == 'Owner') {
+                      _showOwnerUpdateDialog(doc['id'], doc);
+                    } else {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AddDetailInCardPage(
+                            projectId: widget.projectId,
+                            subprojectId: doc['subprojectId'],
+                            docId: doc['id'],
+                          ),
+                        ),
+                      );
+                      _fetchTotalData();
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showOwnerUpdateDialog(
+    String docId,
+    Map<String, dynamic> data,
+  ) async {
+    final amountController = TextEditingController(
+      text: (data['amount'] ?? data['totalAmountPaid'] ?? 0).toString(),
+    );
+    final descriptionController = TextEditingController(
+      text:
+          data['description'] ??
+          (data['fields'] != null ? data['fields'][0]['value'] : ""),
+    );
+    DateTime selectedDate = (data['date'] as Timestamp).toDate();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text("Update Owner Detail"),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      title: Text(
+                        "Date: ${DateFormat('dd/MM/yyyy').format(selectedDate)}",
+                      ),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2101),
+                        );
+                        if (picked != null) {
+                          setDialogState(() {
+                            selectedDate = picked;
+                          });
+                        }
+                      },
+                    ),
+                    TextField(
+                      controller: amountController,
+                      decoration: const InputDecoration(labelText: "Amount"),
+                      keyboardType: TextInputType.number,
+                    ),
+                    TextField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: "Description",
+                      ),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel"),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (amountController.text.isEmpty) return;
+                    try {
+                      await FirebaseFirestore.instance
+                          .collection("users")
+                          .doc(uid)
+                          .collection("projects")
+                          .doc(widget.projectId)
+                          .collection("addOwnerDetail")
+                          .doc(docId)
+                          .update({
+                            'amount':
+                                double.tryParse(amountController.text) ?? 0,
+                            'description': descriptionController.text,
+                            'date': Timestamp.fromDate(selectedDate),
+                          });
+                      if (context.mounted) Navigator.pop(context);
+                      _fetchTotalData();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Record updated")),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Update failed: $e")),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text("Update"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   void _filterData(String query) {
@@ -437,6 +666,9 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                             sortedPairs.length + 2: const FixedColumnWidth(
                               100,
                             ), // Total Paid
+                            sortedPairs.length + 3: const FixedColumnWidth(
+                              100,
+                            ), // Actions
                           },
                           children: [
                             // --- Header Row 1: Categories (Yellow) ---
@@ -457,6 +689,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                   return _buildHeaderCell(parts[0]);
                                 }),
                                 _buildHeaderCell("Total Paid"),
+                                _buildHeaderCell("Actions"),
                               ],
                             ),
                             // --- Header Row 2: KeyTitles (Pink) ---
@@ -476,6 +709,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                   final parts = pair.split("|");
                                   return _buildHeaderCell(parts[1]);
                                 }),
+                                _buildHeaderCell(""),
                                 _buildHeaderCell(""),
                               ],
                             ),
@@ -632,6 +866,34 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                     ),
                                     onTap: onRowTap,
                                     onLongPress: onRowLongPress,
+                                  ),
+                                  // Actions Cell
+                                  _buildDataCell(
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            color: Colors.blue,
+                                            size: 20,
+                                          ),
+                                          onPressed: () =>
+                                              _showUpdateDocsDialog(docs),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                            size: 20,
+                                          ),
+                                          onPressed: () => _confirmDeleteGroup(
+                                            docs,
+                                            dateStr,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               );
