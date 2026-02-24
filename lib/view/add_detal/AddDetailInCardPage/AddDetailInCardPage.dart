@@ -26,7 +26,11 @@ class AddDetailInCardPage extends StatefulWidget {
 class _AddDetailInCardPageState extends State<AddDetailInCardPage> {
   final uid = FirebaseAuth.instance.currentUser!.uid;
 
-  DateTime _selectedDate = DateTime.now();
+  DateTime _selectedDate = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+  );
 
   Future<void> _pickDate() async {
     final DateTime? picked = await showDatePicker(
@@ -37,7 +41,7 @@ class _AddDetailInCardPageState extends State<AddDetailInCardPage> {
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {
-        _selectedDate = picked;
+        _selectedDate = DateTime(picked.year, picked.month, picked.day);
       });
     }
   }
@@ -240,6 +244,40 @@ class _AddDetailInCardPageState extends State<AddDetailInCardPage> {
 
   // ---------- Submit ----------
   Future<void> _submit() async {
+    // Check if data already exists for this date
+    final startOfDay = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    final existingData = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('projects')
+        .doc(widget.projectId)
+        .collection('subprojects')
+        .doc(widget.subprojectId)
+        .collection('formData')
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('date', isLessThan: Timestamp.fromDate(endOfDay))
+        .limit(1)
+        .get();
+
+    if (existingData.docs.isNotEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Data already submitted for ${DateFormat('dd/MM/yyyy').format(_selectedDate)}. One entry per date allowed.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     // Simple fields
     final simpleFields = <Map<String, dynamic>>[];
     for (int i = 0; i < keyControllers.length; i++) {
