@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'show_title_project_table_page.dart';
 import 'package:manage_data/controller/sub_project_cache_controller.dart';
+import '../../../add_detal/AddDetailInCardPage/AddDetailInCardPage.dart';
 
 class ShowSubProjectTablePage extends StatefulWidget {
   final String projectId;
@@ -47,6 +48,54 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
         .collection("formData")
         .orderBy('date', descending: true)
         .snapshots();
+  }
+
+  Future<void> _confirmDelete(String docId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirm Delete"),
+        content: const Text("Are you sure you want to delete this record?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await FirebaseFirestore.instance
+            .collection("users")
+            .doc(uid)
+            .collection("projects")
+            .doc(widget.projectId)
+            .collection("subprojects")
+            .doc(widget.subprojectId)
+            .collection("formData")
+            .doc(docId)
+            .delete();
+
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Record deleted")));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Error deleting: $e")));
+        }
+      }
+    }
   }
 
   // 👈 ye hi apka selected row index hoga
@@ -373,6 +422,12 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
+                        const DataColumn(
+                          label: Text(
+                            "Actions",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ],
                       rows: List.generate(docDataList.length, (index) {
                         final data = docDataList[index];
@@ -484,6 +539,39 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                 ),
+                              ),
+                            ),
+                            DataCell(
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: Colors.blue,
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => AddDetailInCardPage(
+                                            projectId: widget.projectId,
+                                            subprojectId: widget.subprojectId,
+                                            docId: docIds[index],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () =>
+                                        _confirmDelete(docIds[index]),
+                                  ),
+                                ],
                               ),
                             ),
                           ],

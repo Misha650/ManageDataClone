@@ -13,10 +13,12 @@ import 'wdgets/AddTaskSet.dart'; // Add in pubspec
 class AddDetailInCardPage extends StatefulWidget {
   final String subprojectId;
   final String projectId;
+  final String? docId;
   const AddDetailInCardPage({
     super.key,
     required this.subprojectId,
     required this.projectId,
+    this.docId,
   });
 
   @override
@@ -116,40 +118,66 @@ class _AddDetailInCardPageState extends State<AddDetailInCardPage> {
   @override
   void initState() {
     super.initState();
-    _loadLatestForm();
+    _initializeData();
   }
 
-  Future<void> _loadLatestForm() async {
-    final snap = await FirebaseFirestore.instance
+  Future<void> _initializeData() async {
+    final collection = FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
         .collection('projects')
         .doc(widget.projectId)
         .collection('subprojects')
         .doc(widget.subprojectId)
-        .collection('formData')
-        .orderBy('createdAt', descending: true)
-        .limit(1)
-        .get();
+        .collection('formData');
 
-    if (snap.docs.isEmpty) return;
-    final data = snap.docs.first.data();
+    DocumentSnapshot? snap;
+
+    if (widget.docId != null) {
+      snap = await collection.doc(widget.docId).get();
+    } else {
+      final latest = await collection
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
+      if (latest.docs.isNotEmpty) snap = latest.docs.first;
+    }
+
+    if (snap == null || !snap.exists) return;
+    final data = snap.data() as Map<String, dynamic>;
+    final isEdit = widget.docId != null;
+
+    if (isEdit) {
+      _selectedDate = (data['date'] as Timestamp).toDate();
+      totalAmountPaidController.text = (data['totalAmountPaid'] ?? 0)
+          .toString();
+    }
 
     // -------- Simple --------
     for (var f in (data['fields'] ?? [])) {
       keyControllers.add(TextEditingController(text: f['keyTitle'] ?? ''));
-      valueControllers.add(TextEditingController());
-      amountPaidControllers.add(TextEditingController()); // keep blank if null
-      _simpleExpanded.add(true); // start expanded
+      valueControllers.add(
+        TextEditingController(text: isEdit ? (f['value'] ?? '') : ''),
+      );
+      amountPaidControllers.add(
+        TextEditingController(
+          text: isEdit ? (f['amountPaid']?.toString() ?? '') : '',
+        ),
+      );
+      _simpleExpanded.add(true);
     }
 
-    // -------- Milestones (NEW) --------
+    // -------- Milestones --------
     for (var m in (data['milestones'] ?? [])) {
       milestoneTitleControllers.add(
         TextEditingController(text: m['keyTitle'] ?? ''),
       );
-      milestoneAmountControllers.add(TextEditingController());
-      _milestoneExpanded.add(true); // start expanded
+      milestoneAmountControllers.add(
+        TextEditingController(
+          text: isEdit ? (m['amountPaid']?.toString() ?? '') : '',
+        ),
+      );
+      _milestoneExpanded.add(true);
     }
 
     // -------- Dual --------
@@ -157,23 +185,29 @@ class _AddDetailInCardPageState extends State<AddDetailInCardPage> {
       final dual = DualFieldControllers();
       dual.mainKeyController.text = df['keyTitle'] ?? '';
 
-      final remembered = (df['myValue'] as List? ?? [])
-          .where((e) => e['remembered'] == true)
-          .toList();
+      final entries = df['myValue'] as List? ?? [];
+      final listToUse = isEdit
+          ? entries
+          : entries.where((e) => e['remembered'] == true).toList();
 
-      if (remembered.isEmpty) {
-        dual.entries = [DualEntryControllers()]; // default one empty entry
+      if (listToUse.isEmpty) {
+        dual.entries = [DualEntryControllers()];
       } else {
-        dual.entries = remembered.map((e) {
+        dual.entries = listToUse.map((e) {
           final entry = DualEntryControllers();
           entry.titleController.text = e['title'] ?? '';
-          entry.remembered = true;
+          if (isEdit) {
+            entry.descriptionController.text = e['description'] ?? '';
+            entry.amountPaidController.text = e['amountPaid']?.toString() ?? '';
+            entry.balanceController.text = e['balance']?.toString() ?? '';
+          }
+          entry.remembered = e['remembered'] == true;
           return entry;
         }).toList();
       }
 
       dualFields.add(dual);
-      _dualExpanded.add(true); // start expanded
+      _dualExpanded.add(true);
     }
 
     // -------- Labour --------
@@ -181,23 +215,27 @@ class _AddDetailInCardPageState extends State<AddDetailInCardPage> {
       final labour = LabourFieldControllers();
       labour.mainKeyController.text = lf['keyTitle'] ?? '';
 
-      final remembered = (lf['myValue'] as List? ?? [])
-          .where((e) => e['remembered'] == true)
-          .toList();
+      final entries = lf['myValue'] as List? ?? [];
+      final listToUse = isEdit
+          ? entries
+          : entries.where((e) => e['remembered'] == true).toList();
 
-      if (remembered.isEmpty) {
-        labour.entries = [LabourEntryControllers()]; // default one empty entry
+      if (listToUse.isEmpty) {
+        labour.entries = [LabourEntryControllers()];
       } else {
-        labour.entries = remembered.map((e) {
+        labour.entries = listToUse.map((e) {
           final entry = LabourEntryControllers();
           entry.titleController.text = e['title'] ?? '';
-          entry.remembered = true;
+          if (isEdit) {
+            entry.amountPaidController.text = e['amountPaid']?.toString() ?? '';
+          }
+          entry.remembered = e['remembered'] == true;
           return entry;
         }).toList();
       }
 
       labourFields.add(labour);
-      _labourExpanded.add(true); // start expanded
+      _labourExpanded.add(true);
     }
 
     setState(() {
@@ -266,16 +304,20 @@ class _AddDetailInCardPageState extends State<AddDetailInCardPage> {
         .get();
 
     if (existingData.docs.isNotEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Data already submitted for ${DateFormat('dd/MM/yyyy').format(_selectedDate)}. One entry per date allowed.',
+      // If editing and the existing doc is the same doc, then it's fine
+      final existingDocId = existingData.docs.first.id;
+      if (widget.docId == null || existingDocId != widget.docId) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Data already submitted for ${DateFormat('dd/MM/yyyy').format(_selectedDate)}. One entry per date allowed.',
+            ),
+            backgroundColor: Colors.red,
           ),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+        );
+        return;
+      }
     }
 
     // Simple fields
@@ -352,24 +394,39 @@ class _AddDetailInCardPageState extends State<AddDetailInCardPage> {
       labourData.add({'keyTitle': key, 'myValue': entries});
     }
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('projects')
-        .doc(widget.projectId)
-        .collection('subprojects')
-        .doc(widget.subprojectId)
-        .collection('formData')
-        .add({
-          'fields': simpleFields,
-          'milestones': milestones, // ✅ NEW
-          'dualFields': dualData,
-          'labourFields': labourData,
-          'totalAmountPaid':
-              double.tryParse(totalAmountPaidController.text.trim()) ?? 0,
-          'date': Timestamp.fromDate(_selectedDate),
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+    final formData = {
+      'fields': simpleFields,
+      'milestones': milestones,
+      'dualFields': dualData,
+      'labourFields': labourData,
+      'totalAmountPaid':
+          double.tryParse(totalAmountPaidController.text.trim()) ?? 0,
+      'date': Timestamp.fromDate(_selectedDate),
+      'createdAt': widget.docId != null ? null : FieldValue.serverTimestamp(),
+    };
+    if (widget.docId != null) {
+      formData.remove('createdAt'); // Don't overwrite createdAt on update
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('projects')
+          .doc(widget.projectId)
+          .collection('subprojects')
+          .doc(widget.subprojectId)
+          .collection('formData')
+          .doc(widget.docId)
+          .update(formData);
+    } else {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('projects')
+          .doc(widget.projectId)
+          .collection('subprojects')
+          .doc(widget.subprojectId)
+          .collection('formData')
+          .add(formData);
+    }
 
     if (!mounted) return;
     ScaffoldMessenger.of(
