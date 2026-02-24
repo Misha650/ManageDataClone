@@ -667,7 +667,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                               100,
                             ), // Total Paid
                             sortedPairs.length + 3: const FixedColumnWidth(
-                              100,
+                              120,
                             ), // Actions
                           },
                           children: [
