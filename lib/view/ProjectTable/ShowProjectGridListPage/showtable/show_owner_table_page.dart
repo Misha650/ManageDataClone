@@ -34,6 +34,155 @@ class _ShowOwnerTablePageState extends State<ShowOwnerTablePage> {
         .snapshots();
   }
 
+  Future<void> _confirmDelete(String docId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirm Delete"),
+        content: const Text("Are you sure you want to delete this record?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await FirebaseFirestore.instance
+            .collection("users")
+            .doc(uid)
+            .collection("projects")
+            .doc(widget.projectId)
+            .collection("addOwnerDetail")
+            .doc(docId)
+            .delete();
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Record deleted")));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Error deleting: $e")));
+        }
+      }
+    }
+  }
+
+  Future<void> _showUpdateDialog(
+    String docId,
+    Map<String, dynamic> data,
+  ) async {
+    final amountController = TextEditingController(
+      text: data['amount']?.toString() ?? "0",
+    );
+    final descriptionController = TextEditingController(
+      text: data['description'] ?? "",
+    );
+    DateTime selectedDate =
+        (data['date'] as Timestamp?)?.toDate() ?? DateTime.now();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text("Update Owner Detail"),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      title: Text(
+                        "Date: ${DateFormat('dd/MM/yyyy').format(selectedDate)}",
+                      ),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2101),
+                        );
+                        if (picked != null) {
+                          setDialogState(() {
+                            selectedDate = picked;
+                          });
+                        }
+                      },
+                    ),
+                    TextField(
+                      controller: amountController,
+                      decoration: const InputDecoration(labelText: "Amount"),
+                      keyboardType: TextInputType.number,
+                    ),
+                    TextField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: "Description",
+                      ),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel"),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (amountController.text.isEmpty) return;
+                    try {
+                      await FirebaseFirestore.instance
+                          .collection("users")
+                          .doc(uid)
+                          .collection("projects")
+                          .doc(widget.projectId)
+                          .collection("addOwnerDetail")
+                          .doc(docId)
+                          .update({
+                            'amount':
+                                double.tryParse(amountController.text) ?? 0,
+                            'description': descriptionController.text,
+                            'date': Timestamp.fromDate(selectedDate),
+                          });
+                      if (context.mounted) Navigator.pop(context);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Record updated")),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Update failed: $e")),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text("Update"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
@@ -216,6 +365,12 @@ class _ShowOwnerTablePageState extends State<ShowOwnerTablePage> {
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
+                        const DataColumn(
+                          label: Text(
+                            "Actions",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ],
                       rows: List.generate(filteredDocs.length, (index) {
                         final data =
@@ -279,6 +434,28 @@ class _ShowOwnerTablePageState extends State<ShowOwnerTablePage> {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                 ),
+                              ),
+                            ),
+                            DataCell(
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: Colors.blue,
+                                    ),
+                                    onPressed: () =>
+                                        _showUpdateDialog(docId, data),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () => _confirmDelete(docId),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
