@@ -164,20 +164,6 @@ class DetailInfoPage extends StatelessWidget {
       if (data.containsKey(key) &&
           data[key] is List &&
           (data[key] as List).isNotEmpty) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ),
-        );
-
         for (var item in (data[key] as List)) {
           if (item is Map) {
             final title = item['keyTitle'] ?? "Item";
@@ -291,22 +277,6 @@ class DetailInfoPage extends StatelessWidget {
           if (group.containsKey(key) &&
               group[key] is List &&
               (group[key] as List).isNotEmpty) {
-            widgets.add(
-              Padding(
-                padding: const EdgeInsets.only(left: 8, bottom: 5, top: 10),
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(0.8),
-                  ),
-                ),
-              ),
-            );
-
             for (var item in (group[key] as List)) {
               if (item is Map) {
                 widgets.add(_buildItemWidget(context, key, item));
