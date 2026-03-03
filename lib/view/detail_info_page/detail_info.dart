@@ -95,8 +95,12 @@ class DetailInfoPage extends StatelessWidget {
             ),
           if (description.isNotEmpty) const SizedBox(height: 15),
 
-          // Dynamic Sections
-          ..._buildDynamicSections(context),
+          // Grouped Source Sections (NEW)
+          if (data.containsKey('sourceGroups')) ..._buildSourceGroups(context),
+
+          // Dynamic Sections (Fallback/Legacy)
+          if (!data.containsKey('sourceGroups'))
+            ..._buildDynamicSections(context),
 
           const SizedBox(height: 30),
 
@@ -214,6 +218,133 @@ class DetailInfoPage extends StatelessWidget {
     }
 
     return widgets;
+  }
+
+  List<Widget> _buildSourceGroups(BuildContext context) {
+    List<Widget> widgets = [];
+    final List groups = data['sourceGroups'] as List? ?? [];
+
+    for (var group in groups) {
+      if (group is Map) {
+        final sourceName = group['sourceName'] ?? "Untitled Source";
+        final groupDesc = group['description'] ?? "";
+
+        // Source Header
+        widgets.add(
+          Container(
+            margin: const EdgeInsets.only(top: 20, bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              sourceName,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        );
+
+        if (groupDesc.isNotEmpty) {
+          widgets.add(
+            _buildPremiumCard(
+              context,
+              title: "Source Description",
+              content: groupDesc,
+              icon: Icons.info_outline_rounded,
+              color: Colors.grey[700]!,
+              isDescription: true,
+            ),
+          );
+          widgets.add(const SizedBox(height: 10));
+        }
+
+        // Render sections for this group
+        final sections = {
+          'fields': 'Fields',
+          'milestones': 'Milestones',
+          'dualFields': 'Extra Details',
+          'labourFields': 'Labour Details',
+        };
+
+        sections.forEach((key, label) {
+          if (group.containsKey(key) &&
+              group[key] is List &&
+              (group[key] as List).isNotEmpty) {
+            widgets.add(
+              Padding(
+                padding: const EdgeInsets.only(left: 8, bottom: 5, top: 10),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.8),
+                  ),
+                ),
+              ),
+            );
+
+            for (var item in (group[key] as List)) {
+              if (item is Map) {
+                widgets.add(_buildItemWidget(context, key, item));
+                widgets.add(const SizedBox(height: 10));
+              }
+            }
+          }
+        });
+      }
+    }
+    return widgets;
+  }
+
+  Widget _buildItemWidget(BuildContext context, String key, Map item) {
+    final title = item['keyTitle'] ?? "Item";
+    String subContent = "";
+
+    if (key == 'fields') {
+      subContent =
+          "Value: ${item['value'] ?? '-'}\nPaid: ₹${item['amountPaid'] ?? 0}";
+    } else if (key == 'milestones') {
+      subContent = "Paid: ₹${item['amountPaid'] ?? 0}";
+    } else if (key == 'dualFields' || key == 'labourFields') {
+      final myValue = item['myValue'] as List? ?? [];
+      final itemDescription = item['description'] ?? "";
+      subContent = itemDescription.isNotEmpty ? "$itemDescription\n\n" : "";
+      subContent += myValue
+          .map((e) {
+            if (e is Map) {
+              final t = e['title'] ?? "";
+              final p = e['amountPaid'] ?? 0;
+              final b = e['balance'] ?? 0;
+              final desc = e['description'] ?? "";
+
+              String itemLine = "• $t: ₹$p${b != 0 ? ' (Bal: ₹$b)' : ''}";
+              if (desc.isNotEmpty) {
+                itemLine += "\n  $desc";
+              }
+              return itemLine;
+            }
+            return "";
+          })
+          .where((s) => s.isNotEmpty)
+          .join("\n");
+    }
+
+    return _buildPremiumCard(
+      context,
+      title: title,
+      content: subContent,
+      icon: _getIconForSection(key),
+      color: _getColorForSection(key),
+      isDescription: true,
+    );
   }
 
   IconData _getIconForSection(String key) {

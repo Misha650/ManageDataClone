@@ -746,17 +746,13 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                     }
                                   });
                                 } else if (docs.isNotEmpty) {
-                                  // Aggregate all data for this date
+                                  // Aggregate data into source groups for hierarchical display
                                   double totalPaidAmount = 0;
                                   double totalOwnerAmount = 0;
 
-                                  List aggregatedFields = [];
-                                  List aggregatedMilestones = [];
-                                  List aggregatedDualFields = [];
-                                  List aggregatedLabourFields = [];
-
+                                  List<Map<String, dynamic>> sourceGroups = [];
                                   Set<String> subNames = {};
-                                  List<String> descriptions = [];
+                                  List<String> combinedDescriptions = [];
 
                                   for (var doc in docs) {
                                     final subName =
@@ -772,45 +768,27 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                       totalPaidAmount += amt;
                                     }
 
-                                    if (doc['description'] != null &&
-                                        doc['description']
-                                            .toString()
-                                            .isNotEmpty) {
-                                      descriptions.add(
-                                        "$subName: ${doc['description']}",
+                                    final groupDescription =
+                                        doc['description'] ?? "";
+                                    if (groupDescription
+                                        .toString()
+                                        .isNotEmpty) {
+                                      combinedDescriptions.add(
+                                        "$subName: $groupDescription",
                                       );
                                     }
 
-                                    // Helper to add context to items if multiple exist
-                                    final bool multipleItems = docs.length > 1;
-
-                                    List tagList(List? original) {
-                                      if (original == null) return [];
-                                      if (!multipleItems) return original;
-                                      return original.map((item) {
-                                        if (item is Map) {
-                                          return {
-                                            ...item,
-                                            'keyTitle':
-                                                "$subName - ${item['keyTitle'] ?? 'Detail'}",
-                                          };
-                                        }
-                                        return item;
-                                      }).toList();
-                                    }
-
-                                    aggregatedFields.addAll(
-                                      tagList(doc['fields'] as List?),
-                                    );
-                                    aggregatedMilestones.addAll(
-                                      tagList(doc['milestones'] as List?),
-                                    );
-                                    aggregatedDualFields.addAll(
-                                      tagList(doc['dualFields'] as List?),
-                                    );
-                                    aggregatedLabourFields.addAll(
-                                      tagList(doc['labourFields'] as List?),
-                                    );
+                                    sourceGroups.add({
+                                      'sourceName': subName,
+                                      'description': groupDescription,
+                                      'fields': doc['fields'] as List? ?? [],
+                                      'milestones':
+                                          doc['milestones'] as List? ?? [],
+                                      'dualFields':
+                                          doc['dualFields'] as List? ?? [],
+                                      'labourFields':
+                                          doc['labourFields'] as List? ?? [],
+                                    });
                                   }
 
                                   _navigateToDetail({
@@ -818,7 +796,11 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                     'totalAmountPaid':
                                         totalPaidAmount + totalOwnerAmount,
                                     'subprojectName': subNames.join(", "),
-                                    'description': descriptions.join("\n"),
+                                    'description': combinedDescriptions.join(
+                                      "\n",
+                                    ),
+                                    'sourceGroups': sourceGroups,
+                                    // Keep flat fields for summary if needed, or rely on groups
                                     'fields': [
                                       if (totalOwnerAmount > 0)
                                         {
@@ -834,11 +816,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                               '₹${totalPaidAmount.toStringAsFixed(2)}',
                                           'amountPaid': totalPaidAmount,
                                         },
-                                      ...aggregatedFields,
                                     ],
-                                    'milestones': aggregatedMilestones,
-                                    'dualFields': aggregatedDualFields,
-                                    'labourFields': aggregatedLabourFields,
                                   });
                                 }
                               };
