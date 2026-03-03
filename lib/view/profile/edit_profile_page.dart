@@ -16,6 +16,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _nameController = TextEditingController();
   final _picker = ImagePicker();
   XFile? _imageFile;
+  String? _currentBase64;
   bool _isLoading = false;
   final User? _user = FirebaseAuth.instance.currentUser;
 
@@ -23,6 +24,30 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void initState() {
     super.initState();
     _nameController.text = _user?.displayName ?? "";
+    _fetchCurrentProfile();
+  }
+
+  Future<void> _fetchCurrentProfile() async {
+    if (_user == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_user.uid)
+          .get();
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null && data['profileImage'] != null) {
+          setState(() {
+            _currentBase64 = data['profileImage'] as String?;
+            if (data['displayName'] != null && _nameController.text.isEmpty) {
+              _nameController.text = data['displayName'];
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching profile: $e");
+    }
   }
 
   @override
@@ -103,102 +128,183 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("Edit Profile"),
-        actions: [
-          if (!_isLoading)
-            TextButton(
-              onPressed: _saveProfile,
-              child: const Text(
-                "SAVE",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            )
-          else
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-        ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "Edit Profile",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            // Profile Image Picker
-            GestureDetector(
-              onTap: _pickImage,
+            SizedBox(
+              height: 240, // Height of header (180) + half of avatar (60)
               child: Stack(
+                clipBehavior: Clip.none,
                 children: [
+                  // Lavender Header
                   Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.deepPurple.withOpacity(0.2),
-                        width: 4,
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.grey[200],
-                      backgroundImage: _imageFile != null
-                          ? FileImage(File(_imageFile!.path))
-                          : (_user?.photoURL != null
-                                ? NetworkImage(_user!.photoURL!)
-                                      as ImageProvider
-                                : null),
-                      child: (_imageFile == null && _user?.photoURL == null)
-                          ? const Icon(
-                              Icons.person,
-                              size: 60,
-                              color: Colors.grey,
-                            )
-                          : null,
-                    ),
+                    height: 180,
+                    width: double.infinity,
+                    decoration: const BoxDecoration(color: Color(0xFFC7C7F1)),
                   ),
+                  // Overlapping Profile Image Picker
                   Positioned(
-                    bottom: 0,
+                    bottom:
+                        0, // Position at the very bottom of the 240px container
+                    left: 0,
                     right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Colors.deepPurple,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 20,
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: Stack(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundColor: Colors.grey[200],
+                                backgroundImage: _imageFile != null
+                                    ? FileImage(File(_imageFile!.path))
+                                    : (_currentBase64 != null
+                                          ? MemoryImage(
+                                              base64Decode(_currentBase64!),
+                                            )
+                                          : (_user?.photoURL != null
+                                                ? NetworkImage(_user!.photoURL!)
+                                                      as ImageProvider
+                                                : null)),
+                                child:
+                                    (_imageFile == null &&
+                                        _user?.photoURL == null &&
+                                        _currentBase64 == null)
+                                    ? const Icon(
+                                        Icons.person,
+                                        size: 60,
+                                        color: Colors.grey,
+                                      )
+                                    : null,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Colors.deepPurple,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-            // User Name Input
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: "Full Name",
-                hintText: "Enter your name",
-                prefixIcon: const Icon(Icons.person_outline),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            const SizedBox(
+              height: 20,
+            ), // Reduced since SizedBox already provides spacing
+            // Form Fields
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Full Name",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      hintText: "Enter your name",
+                      prefixIcon: const Icon(Icons.person_outline),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFC7C7F1),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: Text(
+                      "Note: Your email address cannot be changed here.",
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-            Text(
-              "Note: Your email address (${_user?.email ?? 'N/A'}) cannot be changed here.",
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
           ],
+        ),
+      ),
+      // Fixed bottom SAVE button
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _saveProfile,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC7C7F1),
+              foregroundColor: Colors.black87,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: _isLoading
+                ? const CircularProgressIndicator(color: Colors.black87)
+                : const Text(
+                    "SAVE CHANGES",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+          ),
         ),
       ),
     );
