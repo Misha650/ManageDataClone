@@ -6,6 +6,7 @@ import 'package:manage_data/res/components/boxdecoration.dart';
 import 'package:manage_data/controller/project_cache_controller.dart';
 import '../../../../utils/number_to_words.dart';
 import '../../../add_detal/AddDetailInCardPage/AddDetailInCardPage.dart';
+import 'package:manage_data/view/detail_info_page/detail_info.dart';
 
 //misha
 class ShowTotalProjectTablePage extends StatefulWidget {
@@ -127,9 +128,9 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
 
         // Create a structure compatible with the existing rendering logic
         final ownerEntry = {
+          ...data,
           'subprojectName': 'Owner',
           'id': ownerDoc.id,
-          'date': data['date'],
           'totalAmountPaid': amount,
           'fields': [
             {
@@ -183,6 +184,12 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
         });
       }
     }
+  }
+
+  void _navigateToDetail(Map<String, dynamic> data) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => DetailInfoPage(data: data)));
   }
 
   Future<void> _confirmDeleteGroup(List docs, String dateStr) async {
@@ -738,6 +745,101 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                       isSelectionMode = false;
                                     }
                                   });
+                                } else if (docs.isNotEmpty) {
+                                  // Aggregate all data for this date
+                                  double totalPaidAmount = 0;
+                                  double totalOwnerAmount = 0;
+
+                                  List aggregatedFields = [];
+                                  List aggregatedMilestones = [];
+                                  List aggregatedDualFields = [];
+                                  List aggregatedLabourFields = [];
+
+                                  Set<String> subNames = {};
+                                  List<String> descriptions = [];
+
+                                  for (var doc in docs) {
+                                    final subName =
+                                        doc['subprojectName'] ?? "Untitled";
+                                    subNames.add(subName);
+
+                                    final amt =
+                                        (doc['totalAmountPaid'] as num? ?? 0)
+                                            .toDouble();
+                                    if (subName == 'Owner') {
+                                      totalOwnerAmount += amt;
+                                    } else {
+                                      totalPaidAmount += amt;
+                                    }
+
+                                    if (doc['description'] != null &&
+                                        doc['description']
+                                            .toString()
+                                            .isNotEmpty) {
+                                      descriptions.add(
+                                        "$subName: ${doc['description']}",
+                                      );
+                                    }
+
+                                    // Helper to add context to items if multiple exist
+                                    final bool multipleItems = docs.length > 1;
+
+                                    List tagList(List? original) {
+                                      if (original == null) return [];
+                                      if (!multipleItems) return original;
+                                      return original.map((item) {
+                                        if (item is Map) {
+                                          return {
+                                            ...item,
+                                            'keyTitle':
+                                                "$subName - ${item['keyTitle'] ?? 'Detail'}",
+                                          };
+                                        }
+                                        return item;
+                                      }).toList();
+                                    }
+
+                                    aggregatedFields.addAll(
+                                      tagList(doc['fields'] as List?),
+                                    );
+                                    aggregatedMilestones.addAll(
+                                      tagList(doc['milestones'] as List?),
+                                    );
+                                    aggregatedDualFields.addAll(
+                                      tagList(doc['dualFields'] as List?),
+                                    );
+                                    aggregatedLabourFields.addAll(
+                                      tagList(doc['labourFields'] as List?),
+                                    );
+                                  }
+
+                                  _navigateToDetail({
+                                    'date': groupedEntry['date'],
+                                    'totalAmountPaid':
+                                        totalPaidAmount + totalOwnerAmount,
+                                    'subprojectName': subNames.join(", "),
+                                    'description': descriptions.join("\n"),
+                                    'fields': [
+                                      if (totalOwnerAmount > 0)
+                                        {
+                                          'keyTitle': 'Summary (Owner)',
+                                          'value':
+                                              '₹${totalOwnerAmount.toStringAsFixed(2)}',
+                                          'amountPaid': totalOwnerAmount,
+                                        },
+                                      if (totalPaidAmount > 0)
+                                        {
+                                          'keyTitle': 'Summary (Subprojects)',
+                                          'value':
+                                              '₹${totalPaidAmount.toStringAsFixed(2)}',
+                                          'amountPaid': totalPaidAmount,
+                                        },
+                                      ...aggregatedFields,
+                                    ],
+                                    'milestones': aggregatedMilestones,
+                                    'dualFields': aggregatedDualFields,
+                                    'labourFields': aggregatedLabourFields,
+                                  });
                                 }
                               };
 
@@ -770,7 +872,17 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                               onRowTap();
                                             },
                                           )
-                                        : Text("${index + 1}"),
+                                        : Text(
+                                            "${index + 1}",
+                                            style: TextStyle(
+                                              color: Theme.of(
+                                                context,
+                                              ).primaryColor,
+                                              fontWeight: FontWeight.bold,
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
+                                          ),
                                     onTap: onRowTap,
                                     onLongPress: onRowLongPress,
                                   ),
@@ -819,10 +931,17 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                                     [];
                                                 values.add(
                                                   entries
-                                                      .map(
-                                                        (e) =>
-                                                            "${e['title']}, ${e['amountPaid']}",
-                                                      )
+                                                      .map((e) {
+                                                        final title =
+                                                            e['title'] ?? '';
+                                                        final desc =
+                                                            e['description'] ??
+                                                            '';
+                                                        final paid =
+                                                            e['amountPaid'] ??
+                                                            0;
+                                                        return "$title${desc.isNotEmpty ? ', $desc' : ''}, $paid";
+                                                      })
                                                       .join(", "),
                                                 );
                                               } else if (section ==
@@ -832,10 +951,17 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                                     [];
                                                 values.add(
                                                   entries
-                                                      .map(
-                                                        (e) =>
-                                                            "${e['title']}, ${e['amountPaid']}",
-                                                      )
+                                                      .map((e) {
+                                                        final title =
+                                                            e['title'] ?? '';
+                                                        final desc =
+                                                            e['description'] ??
+                                                            '';
+                                                        final paid =
+                                                            e['amountPaid'] ??
+                                                            0;
+                                                        return "$title${desc.isNotEmpty ? ', $desc' : ''}, $paid";
+                                                      })
                                                       .join(", "),
                                                 );
                                               }
