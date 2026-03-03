@@ -15,45 +15,102 @@ class HomeProjectPageCard extends StatelessWidget {
 
     await showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("New Project"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(labelText: "Project Title"),
-            ),
-            TextField(
-              controller: descController,
-              decoration: const InputDecoration(labelText: "Description"),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (titleController.text.isNotEmpty) {
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(uid)
-                    .collection('projects')
-                    .add({
-                      'title': titleController.text,
-                      'description': descController.text,
-                      'createdAt': FieldValue.serverTimestamp(),
-                    });
-                Navigator.pop(context);
-              }
-            },
-            child: const Text("Save"),
-          ),
-        ],
-      ),
+      builder: (context) {
+        bool isSaving = false;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text("New Project"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    enabled: !isSaving,
+                    decoration: const InputDecoration(
+                      labelText: "Project Title",
+                      hintText: "Enter project name",
+                    ),
+                  ),
+                  TextField(
+                    controller: descController,
+                    enabled: !isSaving,
+                    decoration: const InputDecoration(labelText: "Description"),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSaving ? null : () => Navigator.pop(context),
+                  child: const Text("Cancel"),
+                ),
+                ElevatedButton(
+                  onPressed: isSaving
+                      ? null
+                      : () async {
+                          final title = titleController.text.trim();
+                          if (title.isEmpty) return;
+
+                          setState(() => isSaving = true);
+
+                          try {
+                            // Check for duplicate name
+                            final query = await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(uid)
+                                .collection('projects')
+                                .where('title', isEqualTo: title)
+                                .get();
+
+                            if (query.docs.isNotEmpty) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "A project with this name already exists!",
+                                    ),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                              }
+                              setState(() => isSaving = false);
+                              return;
+                            }
+
+                            // Add project
+                            await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(uid)
+                                .collection('projects')
+                                .add({
+                                  'title': title,
+                                  'description': descController.text.trim(),
+                                  'createdAt': FieldValue.serverTimestamp(),
+                                });
+
+                            if (context.mounted) Navigator.pop(context);
+                          } catch (e) {
+                            setState(() => isSaving = false);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Error: $e")),
+                              );
+                            }
+                          }
+                        },
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text("Save"),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -91,24 +148,23 @@ class HomeProjectPageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : const Color(0xFFF8F8FF),
       appBar: AppBar(
-        title: const Text('My Projects'),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: Theme.of(context).brightness == Brightness.dark
-                  ? [Colors.deepPurple.shade900, Colors.purple.shade900]
-                  : [
-                      Theme.of(context).primaryColor,
-                      Theme.of(context).colorScheme.primaryContainer,
-                    ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+        title: const Text(
+          'My Projects',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
         ),
+        centerTitle: false,
+        backgroundColor: isDark
+            ? const Color(0xFF2C2C3E)
+            : const Color(0xFFC7C7F1),
+        foregroundColor: isDark ? Colors.white : Colors.black87,
+        elevation: 0,
         actions: [
           ValueListenableBuilder<ThemeMode>(
             valueListenable: ThemeController.themeNotifier,
@@ -118,7 +174,6 @@ class HomeProjectPageCard extends StatelessWidget {
                   mode == ThemeMode.light
                       ? Icons.dark_mode_rounded
                       : Icons.light_mode_rounded,
-                  color: Colors.white,
                 ),
                 onPressed: () {
                   ThemeController.themeNotifier.value = mode == ThemeMode.light
@@ -133,123 +188,213 @@ class HomeProjectPageCard extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _addProject(context),
-        label: const Text("New Project"),
-        icon: const Icon(Icons.add),
+        label: const Text(
+          "New Project",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        icon: const Icon(Icons.add, size: 24),
+        backgroundColor: isDark
+            ? const Color(0xFF4A4A6A)
+            : const Color(0xFFC7C7F1),
+        foregroundColor: isDark ? Colors.white : Colors.black87,
+        elevation: 4,
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .collection('projects')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.folder_open_rounded,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    "No projects yet.",
-                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
-                  ),
-                ],
+      body: Stack(
+        children: [
+          // Background soft decoration
+          Positioned(
+            top: -50,
+            right: -50,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: (isDark ? Colors.deepPurple : const Color(0xFFC7C7F1))
+                    .withOpacity(0.1),
               ),
-            );
-          }
-          final projects = snapshot.data!.docs;
-          return GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.85,
             ),
-            itemCount: projects.length,
-            itemBuilder: (context, index) {
-              final p = projects[index];
-              return Card(
-                elevation: 3,
-                shadowColor: Colors.black12,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(20),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SubProjectPageCard(projectId: p.id),
+          ),
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .doc(uid)
+                .collection('projects')
+                .orderBy('createdAt', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(
+                    color: isDark ? Colors.purpleAccent : Colors.deepPurple,
+                  ),
+                );
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: (isDark
+                              ? Colors.white10
+                              : const Color(0xFFC7C7F1).withOpacity(0.1)),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.folder_off_rounded,
+                          size: 80,
+                          color: isDark
+                              ? Colors.grey[600]
+                              : const Color(0xFFC7C7F1),
+                        ),
                       ),
-                    );
-                  },
-                  onLongPress: () => _deleteProject(context, p.id),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.folder_copy_rounded,
-                            size: 32,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                      const SizedBox(height: 24),
+                      Text(
+                        "No projects found",
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.black54,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          p['title'],
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Tap the + button to create one",
+                        style: TextStyle(
+                          color: isDark ? Colors.grey[500] : Colors.grey[500],
+                          fontSize: 14,
                         ),
-                        if (p['description'] != null &&
-                            p['description'].toString().isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              p['description'],
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(
-                                  context,
-                                ).textTheme.bodySmall?.color,
-                              ),
-                            ),
-                          ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              final projects = snapshot.data!.docs;
+              return GridView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.85,
+                ),
+                itemCount: projects.length,
+                itemBuilder: (context, index) {
+                  final p = projects[index];
+                  final title = p['title'] ?? 'Untitled';
+                  final desc = p['description'] ?? '';
+
+                  // List of icons and colors for variety
+                  final List<IconData> variedIcons = [
+                    Icons.inventory_2_rounded,
+                    Icons.folder_rounded,
+                    Icons.assignment_rounded,
+                    Icons.business_center_rounded,
+                    Icons.analytics_rounded,
+                    Icons.account_tree_rounded,
+                    Icons.layers_rounded,
+                  ];
+
+                  final List<Color> variedColors = isDark
+                      ? [
+                          Colors.purpleAccent.shade100,
+                          Colors.blueAccent.shade100,
+                          Colors.indigoAccent.shade100,
+                          Colors.deepPurpleAccent.shade100,
+                          const Color(0xFFC7C7F1),
+                        ]
+                      : [
+                          const Color(0xFF8E8ECA),
+                          const Color(0xFF7E7EBA),
+                          const Color(0xFF9E9EDA),
+                          const Color(0xFFA1A1E1),
+                          const Color(0xFFC7C7F1),
+                        ];
+
+                  // Use project ID to pick a stable icon and color
+                  final int pickIndex = p.id.hashCode.abs();
+                  final IconData icon =
+                      variedIcons[pickIndex % variedIcons.length];
+                  final Color iconColor =
+                      variedColors[pickIndex % variedColors.length];
+
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
+                        ),
                       ],
                     ),
-                  ),
-                ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(24),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  SubProjectPageCard(projectId: p.id),
+                            ),
+                          );
+                        },
+                        onLongPress: () => _deleteProject(context, p.id),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: iconColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Icon(icon, size: 28, color: iconColor),
+                              ),
+                              const Spacer(),
+                              Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 17,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                desc.isEmpty ? "No description" : desc,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: isDark
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               );
             },
-          );
-        },
+          ),
+        ],
       ),
     );
   }
