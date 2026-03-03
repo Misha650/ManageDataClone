@@ -185,9 +185,12 @@ class _ShowOwnerTablePageState extends State<ShowOwnerTablePage> {
   }
 
   void _navigateToDetail(Map<String, dynamic> data) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => DetailInfoPage(data: data)));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) =>
+            DetailInfoPage(data: {...data, 'subprojectName': 'Owner Detail'}),
+      ),
+    );
   }
 
   @override

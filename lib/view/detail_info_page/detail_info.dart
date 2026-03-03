@@ -8,82 +8,83 @@ class DetailInfoPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Extract data with fallbacks
-    final amount = (data['amount'] ?? 0.0).toDouble();
-    final description = data['description'] ?? "No description provided";
+    // Extract basic data
+    final details = data['details'] as Map<String, dynamic>?;
+    final displayAmount =
+        (details?['amountPaid'] ??
+                data['totalAmountPaid'] ??
+                data['amount'] ??
+                0.0)
+            .toDouble();
+    final description = details?['description'] ?? data['description'] ?? "";
+    final title = details?['title'] ?? data['subprojectName'] ?? "";
+
     final DateTime? date = data['date'] != null
-        ? (data['date'] is DateTime ? data['date'] : data['date'].toDate())
+        ? (data['date'] is DateTime
+              ? data['date']
+              : (data['date'] is String ? null : data['date'].toDate()))
         : null;
-    final dateStr = date != null
-        ? DateFormat('EEEE, dd MMMM yyyy').format(date)
-        : "N/A";
+    final dateStr = (data['date'] is String)
+        ? data['date']
+        : (date != null
+              ? DateFormat('EEEE, dd MMMM yyyy').format(date)
+              : "N/A");
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text(
-          "Detail Information",
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          title.isNotEmpty ? title : "Detail Information",
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: Theme.of(context).colorScheme.primary,
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body: ListView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Image or Icon Placeholder
-            Center(
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withOpacity(0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.receipt_long_rounded,
-                  size: 60,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+        children: [
+          // Header Icon
+          Center(
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.receipt_long_rounded,
+                size: 50,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
-            const SizedBox(height: 30),
+          ),
+          const SizedBox(height: 25),
 
-            // Amount Card
+          // Primary Info Section
+          if (displayAmount > 0)
             _buildPremiumCard(
               context,
-              title: "Transaction Amount",
-              content: "₹ ${amount.toStringAsFixed(2)}",
+              title: "Total Amount",
+              content: "₹ ${displayAmount.toStringAsFixed(2)}",
               icon: Icons.currency_rupee_rounded,
               color: Colors.green[700]!,
               isAmount: true,
             ),
-            const SizedBox(height: 20),
+          if (displayAmount > 0) const SizedBox(height: 15),
 
-            // Date Card
-            _buildPremiumCard(
-              context,
-              title: "Transaction Date",
-              content: dateStr,
-              icon: Icons.calendar_month_rounded,
-              color: Colors.blue[700]!,
-            ),
-            const SizedBox(height: 20),
+          _buildPremiumCard(
+            context,
+            title: "Date",
+            content: dateStr,
+            icon: Icons.calendar_month_rounded,
+            color: Colors.blue[700]!,
+          ),
+          const SizedBox(height: 15),
 
-            // Description Card
+          if (description.isNotEmpty)
             _buildPremiumCard(
               context,
               title: "Description",
@@ -92,31 +93,143 @@ class DetailInfoPage extends StatelessWidget {
               color: Colors.orange[800]!,
               isDescription: true,
             ),
+          if (description.isNotEmpty) const SizedBox(height: 15),
 
-            const SizedBox(height: 40),
+          // Dynamic Sections
+          ..._buildDynamicSections(context),
 
-            // Actions Row (Optional)
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text("Back to Table"),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+          const SizedBox(height: 30),
+
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back),
+            label: const Text("Back to Table"),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+  }
+
+  List<Widget> _buildDynamicSections(BuildContext context) {
+    List<Widget> widgets = [];
+
+    // Sections to check
+    final sections = {
+      'fields': 'Fields',
+      'milestones': 'Milestones',
+      'dualFields': 'Extra Details',
+      'labourFields': 'Labour Details',
+    };
+
+    sections.forEach((key, label) {
+      if (data.containsKey(key) &&
+          data[key] is List &&
+          (data[key] as List).isNotEmpty) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+        );
+
+        for (var item in (data[key] as List)) {
+          if (item is Map) {
+            final title = item['keyTitle'] ?? "Item";
+            String subContent = "";
+
+            if (key == 'fields') {
+              subContent =
+                  "Value: ${item['value'] ?? '-'}\nPaid: ₹${item['amountPaid'] ?? 0}";
+            } else if (key == 'milestones') {
+              subContent = "Paid: ₹${item['amountPaid'] ?? 0}";
+            } else if (key == 'dualFields' || key == 'labourFields') {
+              final myValue = item['myValue'] as List? ?? [];
+              subContent = myValue
+                  .map((e) {
+                    if (e is Map) {
+                      final t = e['title'] ?? "";
+                      final p = e['amountPaid'] ?? 0;
+                      final b = e['balance'] ?? 0;
+                      return "• $t: ₹$p ${b != 0 ? '(Bal: ₹$b)' : ''}";
+                    }
+                    return "";
+                  })
+                  .join("\n");
+            }
+
+            widgets.add(
+              _buildPremiumCard(
+                context,
+                title: title,
+                content: subContent,
+                icon: _getIconForSection(key),
+                color: _getColorForSection(key),
+                isDescription: true,
+              ),
+            );
+            widgets.add(const SizedBox(height: 10));
+          }
+        }
+      }
+    });
+
+    // Handle 'details' sub-map balance if present
+    if (data['details'] != null && data['details']['balance'] != null) {
+      widgets.add(
+        _buildPremiumCard(
+          context,
+          title: "Balance Balance",
+          content: "₹ ${data['details']['balance']}",
+          icon: Icons.account_balance_wallet_rounded,
+          color: Colors.red[700]!,
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
+  IconData _getIconForSection(String key) {
+    switch (key) {
+      case 'fields':
+        return Icons.list_alt_rounded;
+      case 'milestones':
+        return Icons.flag_rounded;
+      case 'dualFields':
+        return Icons.more_horiz_rounded;
+      case 'labourFields':
+        return Icons.engineering_rounded;
+      default:
+        return Icons.info_outline_rounded;
+    }
+  }
+
+  Color _getColorForSection(String key) {
+    switch (key) {
+      case 'fields':
+        return Colors.purple;
+      case 'milestones':
+        return Colors.teal;
+      case 'dualFields':
+        return Colors.indigo;
+      case 'labourFields':
+        return Colors.brown;
+      default:
+        return Colors.grey;
+    }
   }
 
   Widget _buildPremiumCard(

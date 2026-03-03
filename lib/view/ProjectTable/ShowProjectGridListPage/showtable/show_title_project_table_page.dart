@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:manage_data/controller/sub_project_cache_controller.dart';
+import 'package:manage_data/view/detail_info_page/detail_info.dart';
 
 class ShowTitleProjectTablePage extends StatefulWidget {
   final String projectId;
@@ -29,6 +30,12 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
   String searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
   final SubProjectCacheController _cache = SubProjectCacheController();
+
+  void _navigateToDetail(Map<String, dynamic> data) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => DetailInfoPage(data: data)));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -254,20 +261,22 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
                                     });
                                   }
                                 },
-                                onSelectChanged: isSelectionMode
-                                    ? (value) {
-                                        setState(() {
-                                          if (value == true) {
-                                            selectedIndices.add(index);
-                                          } else {
-                                            selectedIndices.remove(index);
-                                          }
-                                          if (selectedIndices.isEmpty) {
-                                            isSelectionMode = false;
-                                          }
-                                        });
+                                onSelectChanged: (value) {
+                                  if (isSelectionMode) {
+                                    setState(() {
+                                      if (value == true) {
+                                        selectedIndices.add(index);
+                                      } else {
+                                        selectedIndices.remove(index);
                                       }
-                                    : null,
+                                      if (selectedIndices.isEmpty) {
+                                        isSelectionMode = false;
+                                      }
+                                    });
+                                  } else {
+                                    _navigateToDetail({...data});
+                                  }
+                                },
                                 cells: [
                                   DataCell(
                                     isSelectionMode
@@ -286,7 +295,22 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
                                               });
                                             },
                                           )
-                                        : Text("${index + 1}"),
+                                        : Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                            ),
+                                            child: Text(
+                                              "${index + 1}",
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                                fontWeight: FontWeight.bold,
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                            ),
+                                          ),
                                   ),
                                   DataCell(Text(data['date'])),
                                   DataCell(Text(details['title'] ?? "-")),

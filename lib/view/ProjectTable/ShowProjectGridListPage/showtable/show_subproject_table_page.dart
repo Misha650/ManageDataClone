@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'show_title_project_table_page.dart';
 import 'package:manage_data/controller/sub_project_cache_controller.dart';
 import '../../../add_detal/AddDetailInCardPage/AddDetailInCardPage.dart';
+import 'package:manage_data/view/detail_info_page/detail_info.dart';
 
 class ShowSubProjectTablePage extends StatefulWidget {
   final String projectId;
@@ -96,6 +97,16 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
         }
       }
     }
+  }
+
+  void _navigateToDetail(Map<String, dynamic> data) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DetailInfoPage(
+          data: {...data, 'subprojectName': widget.subprojectName},
+        ),
+      ),
+    );
   }
 
   // 👈 ye hi apka selected row index hoga
@@ -446,20 +457,25 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                               });
                             }
                           },
-                          onSelectChanged: isSelectionMode
-                              ? (isSelected) {
-                                  setState(() {
-                                    if (isSelected == true) {
-                                      selectedDocIds.add(docIds[index]);
-                                    } else {
-                                      selectedDocIds.remove(docIds[index]);
-                                    }
-                                    if (selectedDocIds.isEmpty) {
-                                      isSelectionMode = false;
-                                    }
-                                  });
+                          onSelectChanged: (isSelected) {
+                            if (isSelectionMode) {
+                              setState(() {
+                                if (isSelected == true) {
+                                  selectedDocIds.add(docIds[index]);
+                                } else {
+                                  selectedDocIds.remove(docIds[index]);
                                 }
-                              : null,
+                                if (selectedDocIds.isEmpty) {
+                                  isSelectionMode = false;
+                                }
+                              });
+                            } else {
+                              _navigateToDetail({
+                                ...docDataList[index],
+                                'date': docDataList[index]['date'],
+                              });
+                            }
+                          },
                           cells: [
                             DataCell(
                               isSelectionMode
@@ -482,7 +498,19 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                                         });
                                       },
                                     )
-                                  : Text("${index + 1}"),
+                                  : Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                      ),
+                                      child: Text(
+                                        "${index + 1}",
+                                        style: TextStyle(
+                                          color: Theme.of(context).primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ),
                             ),
                             DataCell(Text(dateStr)),
                             ...displayedKeys.map((key) {
