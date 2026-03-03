@@ -190,7 +190,8 @@ class DetailInfoPage extends StatelessWidget {
                           e['description'] ??
                           ""; // This is what the user meant by 'desc'
 
-                      String itemLine = "• $t: $p${b != 0 ? ' (Bal: $b)' : ''}";
+                      String itemLine =
+                          "• $t: $p${b != 0 ? ' (reminder: $b)' : ''}";
                       if (desc.isNotEmpty) {
                         itemLine += "\n  $desc";
                       }
@@ -311,7 +312,7 @@ class DetailInfoPage extends StatelessWidget {
               final b = e['balance'] ?? 0;
               final desc = e['description'] ?? "";
 
-              String itemLine = "• $t: $p${b != 0 ? ' (Bal: $b)' : ''}";
+              String itemLine = "• $t: $p${b != 0 ? ' reminder: $b' : ''}";
               if (desc.isNotEmpty) {
                 itemLine += "\n  $desc";
               }
