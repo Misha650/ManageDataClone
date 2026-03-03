@@ -791,6 +791,13 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                     });
                                   }
 
+                                  // Sort sourceGroups so 'Owner' is always first
+                                  sourceGroups.sort((a, b) {
+                                    if (a['sourceName'] == 'Owner') return -1;
+                                    if (b['sourceName'] == 'Owner') return 1;
+                                    return 0;
+                                  });
+
                                   _navigateToDetail({
                                     'date': groupedEntry['date'],
                                     'totalAmountPaid':

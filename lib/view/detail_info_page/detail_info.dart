@@ -227,9 +227,10 @@ class DetailInfoPage extends StatelessWidget {
     for (var group in groups) {
       if (group is Map) {
         final sourceName = group['sourceName'] ?? "Untitled Source";
-        final groupDesc = group['description'] ?? "";
+        // final groupDesc = group['description'] ?? "";
 
         // Source Header
+
         widgets.add(
           Container(
             margin: const EdgeInsets.only(top: 20, bottom: 10),
@@ -248,20 +249,6 @@ class DetailInfoPage extends StatelessWidget {
             ),
           ),
         );
-
-        if (groupDesc.isNotEmpty) {
-          widgets.add(
-            _buildPremiumCard(
-              context,
-              title: "Source Description",
-              content: groupDesc,
-              icon: Icons.info_outline_rounded,
-              color: Colors.grey[700]!,
-              isDescription: true,
-            ),
-          );
-          widgets.add(const SizedBox(height: 10));
-        }
 
         // Render sections for this group
         final sections = {
