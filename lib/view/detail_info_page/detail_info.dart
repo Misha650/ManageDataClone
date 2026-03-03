@@ -67,22 +67,21 @@ class DetailInfoPage extends StatelessWidget {
           if (displayAmount > 0)
             _buildPremiumCard(
               context,
-              title: "Total Paid Amount",
-              content: " ${displayAmount.toStringAsFixed(2)}",
-              icon: Icons.currency_rupee_rounded,
-              color: Colors.green[700]!,
-              isAmount: true,
+              title: "Date",
+              content: dateStr,
+              icon: Icons.calendar_month_rounded,
+              color: Colors.blue[700]!,
             ),
-          if (displayAmount > 0) const SizedBox(height: 15),
-
+          const SizedBox(height: 15),
           _buildPremiumCard(
             context,
-            title: "Date",
-            content: dateStr,
-            icon: Icons.calendar_month_rounded,
-            color: Colors.blue[700]!,
+            title: "Total Paid Amount",
+            content: " ${displayAmount.toStringAsFixed(2)}",
+            icon: Icons.currency_rupee_rounded,
+            color: Colors.green[700]!,
+            isAmount: true,
           ),
-          const SizedBox(height: 15),
+          if (displayAmount > 0) const SizedBox(height: 15),
 
           // Owner Summary (NEW) - Show when coming from Total Project Table
           if (data.containsKey('totalOwnerAmount') &&
@@ -133,17 +132,17 @@ class DetailInfoPage extends StatelessWidget {
 
           const SizedBox(height: 30),
 
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back),
-            label: const Text("Back to Table"),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-            ),
-          ),
+          // ElevatedButton.icon(
+          //   onPressed: () => Navigator.pop(context),
+          //   icon: const Icon(Icons.arrow_back),
+          //   label: const Text("Back to Table"),
+          //   style: ElevatedButton.styleFrom(
+          //     padding: const EdgeInsets.symmetric(vertical: 15),
+          //     shape: RoundedRectangleBorder(
+          //       borderRadius: BorderRadius.circular(15),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
@@ -167,52 +166,41 @@ class DetailInfoPage extends StatelessWidget {
         for (var item in (data[key] as List)) {
           if (item is Map) {
             final title = item['keyTitle'] ?? "Item";
-            String subContent = "";
 
-            if (key == 'fields') {
-              subContent =
-                  "Value: ${item['value'] ?? '-'}\nPaid: ${item['amountPaid'] ?? 0}";
-            } else if (key == 'milestones') {
-              subContent = "Paid: ${item['amountPaid'] ?? 0}";
-            } else if (key == 'dualFields' || key == 'labourFields') {
-              final myValue = item['myValue'] as List? ?? [];
-              final itemDescription = item['description'] ?? "";
-              subContent = itemDescription.isNotEmpty
-                  ? "$itemDescription\n\n"
-                  : "";
-              subContent += myValue
-                  .map((e) {
-                    if (e is Map) {
-                      final t = e['title'] ?? "";
-                      final p = e['amountPaid'] ?? 0;
-                      final b = e['balance'] ?? 0;
-                      final desc =
-                          e['description'] ??
-                          ""; // This is what the user meant by 'desc'
-
-                      String itemLine =
-                          "• $t: $p${b != 0 ? ' (reminder: $b)' : ''}";
-                      if (desc.isNotEmpty) {
-                        itemLine += "\n  $desc";
-                      }
-                      return itemLine;
-                    }
-                    return "";
-                  })
-                  .where((s) => s.isNotEmpty)
-                  .join("\n");
+            if (key == 'dualFields' || key == 'labourFields') {
+              widgets.add(
+                _buildPremiumCard(
+                  context,
+                  title: title,
+                  contentWidget: _buildDetailContent(
+                    context,
+                    item,
+                    color: _getColorForSection(key),
+                  ),
+                  icon: _getIconForSection(key),
+                  color: _getColorForSection(key),
+                  isDescription: true,
+                ),
+              );
+            } else {
+              String subContent = "";
+              if (key == 'fields') {
+                subContent =
+                    "D: ${item['value'] ?? '-'}\nPaid: ${item['amountPaid'] ?? 0}";
+              } else if (key == 'milestones') {
+                subContent = "Paid: ${item['amountPaid'] ?? 0}";
+              }
+              widgets.add(
+                _buildPremiumCard(
+                  context,
+                  title: title,
+                  content: subContent,
+                  icon: _getIconForSection(key),
+                  color: _getColorForSection(key),
+                  isDescription: true,
+                ),
+              );
             }
-
-            widgets.add(
-              _buildPremiumCard(
-                context,
-                title: title,
-                content: subContent,
-                icon: _getIconForSection(key),
-                color: _getColorForSection(key),
-                isDescription: true,
-              ),
-            );
             widgets.add(const SizedBox(height: 10));
           }
         }
@@ -295,33 +283,26 @@ class DetailInfoPage extends StatelessWidget {
     final title = item['keyTitle'] ?? "Item";
     String subContent = "";
 
+    if (key == 'dualFields' || key == 'labourFields') {
+      return _buildPremiumCard(
+        context,
+        title: title,
+        contentWidget: _buildDetailContent(
+          context,
+          item,
+          color: _getColorForSection(key),
+        ),
+        icon: _getIconForSection(key),
+        color: _getColorForSection(key),
+        isDescription: true,
+      );
+    }
+
     if (key == 'fields') {
       subContent =
           "Value: ${item['value'] ?? '-'}\nPaid: ${item['amountPaid'] ?? 0}";
     } else if (key == 'milestones') {
       subContent = "Paid: ${item['amountPaid'] ?? 0}";
-    } else if (key == 'dualFields' || key == 'labourFields') {
-      final myValue = item['myValue'] as List? ?? [];
-      final itemDescription = item['description'] ?? "";
-      subContent = itemDescription.isNotEmpty ? "$itemDescription\n\n" : "";
-      subContent += myValue
-          .map((e) {
-            if (e is Map) {
-              final t = e['title'] ?? "";
-              final p = e['amountPaid'] ?? 0;
-              final b = e['balance'] ?? 0;
-              final desc = e['description'] ?? "";
-
-              String itemLine = "• $t: $p${b != 0 ? ' reminder: $b' : ''}";
-              if (desc.isNotEmpty) {
-                itemLine += "\n  $desc";
-              }
-              return itemLine;
-            }
-            return "";
-          })
-          .where((s) => s.isNotEmpty)
-          .join("\n");
     }
 
     return _buildPremiumCard(
@@ -331,6 +312,90 @@ class DetailInfoPage extends StatelessWidget {
       icon: _getIconForSection(key),
       color: _getColorForSection(key),
       isDescription: true,
+    );
+  }
+
+  Widget _buildDetailContent(
+    BuildContext context,
+    Map item, {
+    required Color color,
+  }) {
+    final List myValue = item['myValue'] as List? ?? [];
+    final String itemDescription = item['description'] ?? "";
+    List<Widget> contentWidgets = [];
+
+    if (itemDescription.isNotEmpty) {
+      contentWidgets.add(
+        Text(
+          itemDescription,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+      );
+      contentWidgets.add(const SizedBox(height: 10));
+    }
+
+    for (int i = 0; i < myValue.length; i++) {
+      final e = myValue[i];
+      if (e is Map) {
+        final t = e['title'] ?? "";
+        final p = e['amountPaid'] ?? 0;
+        final b = e['balance'] ?? 0;
+        final desc = e['description'] ?? "";
+
+        contentWidgets.add(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Title : $t",
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              Text(
+                "Paid : $p",
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              if (b != 0)
+                Text(
+                  "reminder : $b",
+                  style: const TextStyle(fontSize: 14, color: Colors.red),
+                ),
+              if (desc.isNotEmpty)
+                Text(
+                  "Description : $desc",
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+            ],
+          ),
+        );
+
+        // Add divider if not the last item
+        if (i < myValue.length - 1) {
+          contentWidgets.add(
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Divider(color: color.withOpacity(0.3), thickness: 1),
+            ),
+          );
+        }
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: contentWidgets,
     );
   }
 
@@ -367,7 +432,8 @@ class DetailInfoPage extends StatelessWidget {
   Widget _buildPremiumCard(
     BuildContext context, {
     required String title,
-    required String content,
+    String? content,
+    Widget? contentWidget,
     required IconData icon,
     required Color color,
     bool isAmount = false,
@@ -408,20 +474,23 @@ class DetailInfoPage extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                    color: const Color.fromARGB(255, 19, 19, 19),
+                    fontWeight: FontWeight.bold,
+                    fontStyle: FontStyle.normal,
                   ),
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  content,
-                  style: TextStyle(
-                    fontSize: isAmount ? 24 : 16,
-                    fontWeight: isAmount ? FontWeight.bold : FontWeight.w600,
-                    color: isAmount ? color : Colors.black87,
+                const SizedBox(height: 10),
+                if (contentWidget != null)
+                  contentWidget
+                else if (content != null)
+                  Text(
+                    content,
+                    style: TextStyle(
+                      fontStyle: isDescription ? FontStyle.italic : null,
+                      fontSize: 14,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
