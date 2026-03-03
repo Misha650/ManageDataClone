@@ -67,8 +67,8 @@ class DetailInfoPage extends StatelessWidget {
           if (displayAmount > 0)
             _buildPremiumCard(
               context,
-              title: "Total Amount",
-              content: "₹ ${displayAmount.toStringAsFixed(2)}",
+              title: "Total Paid Amount",
+              content: " ${displayAmount.toStringAsFixed(2)}",
               icon: Icons.currency_rupee_rounded,
               color: Colors.green[700]!,
               isAmount: true,
@@ -91,11 +91,13 @@ class DetailInfoPage extends StatelessWidget {
               context,
               title: "Owner Total Amount",
               content:
-                  "₹ ${(data['totalOwnerAmount'] as num).toStringAsFixed(2)}",
+                  " ${(data['totalOwnerAmount'] as num).toStringAsFixed(2)}",
               icon: Icons.person_rounded,
               color: Colors.blue[800]!,
               isAmount: true,
             ),
+          const SizedBox(height: 15),
+
           if (data['totalOwnerDescription'] != null &&
               data['totalOwnerDescription'].toString().isNotEmpty)
             _buildPremiumCard(
@@ -183,9 +185,9 @@ class DetailInfoPage extends StatelessWidget {
 
             if (key == 'fields') {
               subContent =
-                  "Value: ${item['value'] ?? '-'}\nPaid: ₹${item['amountPaid'] ?? 0}";
+                  "Value: ${item['value'] ?? '-'}\nPaid: ${item['amountPaid'] ?? 0}";
             } else if (key == 'milestones') {
-              subContent = "Paid: ₹${item['amountPaid'] ?? 0}";
+              subContent = "Paid: ${item['amountPaid'] ?? 0}";
             } else if (key == 'dualFields' || key == 'labourFields') {
               final myValue = item['myValue'] as List? ?? [];
               final itemDescription = item['description'] ?? "";
@@ -202,8 +204,7 @@ class DetailInfoPage extends StatelessWidget {
                           e['description'] ??
                           ""; // This is what the user meant by 'desc'
 
-                      String itemLine =
-                          "• $t: ₹$p${b != 0 ? ' (Bal: ₹$b)' : ''}";
+                      String itemLine = "• $t: $p${b != 0 ? ' (Bal: $b)' : ''}";
                       if (desc.isNotEmpty) {
                         itemLine += "\n  $desc";
                       }
@@ -237,7 +238,7 @@ class DetailInfoPage extends StatelessWidget {
         _buildPremiumCard(
           context,
           title: "Balance Balance",
-          content: "₹ ${data['details']['balance']}",
+          content: " ${data['details']['balance']}",
           icon: Icons.account_balance_wallet_rounded,
           color: Colors.red[700]!,
         ),
@@ -254,6 +255,7 @@ class DetailInfoPage extends StatelessWidget {
     for (var group in groups) {
       if (group is Map) {
         final sourceName = group['sourceName'] ?? "Untitled Source";
+        if (sourceName == 'Owner') continue;
         // final groupDesc = group['description'] ?? "";
 
         // Source Header
@@ -324,9 +326,9 @@ class DetailInfoPage extends StatelessWidget {
 
     if (key == 'fields') {
       subContent =
-          "Value: ${item['value'] ?? '-'}\nPaid: ₹${item['amountPaid'] ?? 0}";
+          "Value: ${item['value'] ?? '-'}\nPaid: ${item['amountPaid'] ?? 0}";
     } else if (key == 'milestones') {
-      subContent = "Paid: ₹${item['amountPaid'] ?? 0}";
+      subContent = "Paid: ${item['amountPaid'] ?? 0}";
     } else if (key == 'dualFields' || key == 'labourFields') {
       final myValue = item['myValue'] as List? ?? [];
       final itemDescription = item['description'] ?? "";
@@ -339,7 +341,7 @@ class DetailInfoPage extends StatelessWidget {
               final b = e['balance'] ?? 0;
               final desc = e['description'] ?? "";
 
-              String itemLine = "• $t: ₹$p${b != 0 ? ' (Bal: ₹$b)' : ''}";
+              String itemLine = "• $t: $p${b != 0 ? ' (Bal: $b)' : ''}";
               if (desc.isNotEmpty) {
                 itemLine += "\n  $desc";
               }
