@@ -114,23 +114,7 @@ class _AddOwnerDetailPageState extends State<AddOwnerDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Add Owner Details"),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: Theme.of(context).brightness == Brightness.dark
-                  ? [Colors.deepPurple.shade900, Colors.purple.shade900]
-                  : [
-                      Theme.of(context).primaryColor,
-                      Theme.of(context).colorScheme.primaryContainer,
-                    ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-      ),
+      appBar: AppBar(title: const Text("Add Owner Details")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(

@@ -444,34 +444,7 @@ class _AddDetailInCardPageState extends State<AddDetailInCardPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Project Details'),
-
-        // actions: [
-        //    IconButton(
-        //     icon: const Icon(Icons.looks_4),
-        //     onPressed: ()  {
-        //       Navigator.push(
-        //         context,
-        //         MaterialPageRoute(
-        //           builder: (_) =>  MygetDetailPage(projectId:  p.id,),
-        //         ),
-        //       );
-
-        //     },
-        //   ),
-        // ],
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            // gradient: LinearGradient(
-            //   colors: [Color(0xff6a11cb), Color(0xff2575fc)],
-            //   begin: Alignment.topLeft,
-            //   end: Alignment.bottomRight,
-            // ),
-          ),
-        ),
-        elevation: 4,
-      ),
+      appBar: AppBar(title: const Text('Project Details'), elevation: 4),
 
       // ✅ Floating Speed Dial instead of add-menu column
       floatingActionButton: SpeedDial(

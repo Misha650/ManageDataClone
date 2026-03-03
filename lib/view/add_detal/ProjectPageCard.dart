@@ -105,23 +105,7 @@ class SubProjectPageCard extends StatelessWidget {
     final uid = user!.uid;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Subproject'),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: Theme.of(context).brightness == Brightness.dark
-                  ? [Colors.deepPurple.shade900, Colors.purple.shade900]
-                  : [
-                      Theme.of(context).primaryColor,
-                      Theme.of(context).colorScheme.primaryContainer,
-                    ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Subprojects')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _addTask(context),
         label: const Text("New Task"),
@@ -141,24 +125,19 @@ class SubProjectPageCard extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
+          final theme = Theme.of(context);
           final projects = snapshot.hasData ? snapshot.data!.docs : [];
 
           return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            // +1 for the Owner Card
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             itemCount: projects.length + 1,
             itemBuilder: (context, index) {
-              // 1. Owner Card at Index 0
               if (index == 0) {
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  elevation: 4,
-                  shadowColor: Theme.of(context).primaryColor.withOpacity(0.3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                  margin: const EdgeInsets.only(bottom: 24),
+                  color: theme.colorScheme.primary,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(24),
                     onTap: () {
                       Navigator.push(
                         context,
@@ -168,30 +147,19 @@ class SubProjectPageCard extends StatelessWidget {
                         ),
                       );
                     },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: LinearGradient(
-                          colors: [
-                            Theme.of(context).primaryColor.withOpacity(0.8),
-                            Theme.of(context).primaryColor,
-                          ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                      ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
                         leading: Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: Colors.white24,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.person, color: Colors.white),
+                          child: const Icon(
+                            Icons.person_add_rounded,
+                            color: Colors.white,
+                          ),
                         ),
                         title: const Text(
                           "Add Owner Detail",
@@ -201,7 +169,10 @@ class SubProjectPageCard extends StatelessWidget {
                             fontSize: 18,
                           ),
                         ),
-                        trailing: const Icon(Icons.star, color: Colors.white70),
+                        trailing: const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.white70,
+                        ),
                       ),
                     ),
                   ),
