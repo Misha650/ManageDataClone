@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:manage_data/auth/google_login.dart';
+import 'package:manage_data/controller/teame_controller.dart';
 import 'edit_profile_page.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -39,7 +40,7 @@ class ProfilePage extends StatelessWidget {
           return CustomScrollView(
             slivers: [
               SliverAppBar(
-                expandedHeight: 200,
+                expandedHeight: 70,
                 pinned: true,
                 backgroundColor: theme.appBarTheme.backgroundColor,
                 flexibleSpace: FlexibleSpaceBar(
@@ -78,7 +79,7 @@ class ProfilePage extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      top: 40,
+                      top: 10,
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
@@ -86,7 +87,7 @@ class ProfilePage extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: CircleAvatar(
-                          radius: 55,
+                          radius: 65,
                           backgroundColor: Colors.grey[200],
                           backgroundImage: profileImageBase64 != null
                               ? MemoryImage(base64Decode(profileImageBase64))
@@ -130,7 +131,7 @@ class ProfilePage extends StatelessWidget {
                           fontSize: 16,
                         ),
                       ),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 22),
                       _buildMenuTile(
                         context,
                         icon: Icons.shield_outlined,
@@ -149,7 +150,32 @@ class ProfilePage extends StatelessWidget {
                         title: "Settings",
                         onTap: () {},
                       ),
-                      const SizedBox(height: 20),
+                      ValueListenableBuilder<ThemeMode>(
+                        valueListenable: ThemeController.themeNotifier,
+                        builder: (context, ThemeMode mode, _) {
+                          final isDark = mode == ThemeMode.dark;
+                          return _buildMenuTile(
+                            context,
+                            icon: isDark ? Icons.dark_mode : Icons.light_mode,
+                            title: "Dark Mode",
+                            trailing: Switch(
+                              value: isDark,
+                              onChanged: (val) {
+                                ThemeController.themeNotifier.value = val
+                                    ? ThemeMode.dark
+                                    : ThemeMode.light;
+                              },
+                              activeColor: theme.colorScheme.primary,
+                            ),
+                            onTap: () {
+                              ThemeController.themeNotifier.value = isDark
+                                  ? ThemeMode.light
+                                  : ThemeMode.dark;
+                            },
+                          );
+                        },
+                      ),
+
                       _buildMenuTile(
                         context,
                         icon: Icons.logout,
@@ -186,6 +212,7 @@ class ProfilePage extends StatelessWidget {
     required String title,
     required VoidCallback onTap,
     Color? color,
+    Widget? trailing,
   }) {
     final theme = Theme.of(context);
     return Padding(
@@ -201,7 +228,7 @@ class ProfilePage extends StatelessWidget {
           child: Icon(icon, color: color ?? theme.colorScheme.primary),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        trailing: const Icon(Icons.chevron_right, size: 20),
+        trailing: trailing ?? const Icon(Icons.chevron_right, size: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         tileColor: theme.cardTheme.color,
       ),
