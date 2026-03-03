@@ -753,6 +753,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                   List<Map<String, dynamic>> sourceGroups = [];
                                   Set<String> subNames = {};
                                   List<String> combinedDescriptions = [];
+                                  List<String> ownerDescriptions = [];
 
                                   for (var doc in docs) {
                                     final subName =
@@ -764,6 +765,11 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                             .toDouble();
                                     if (subName == 'Owner') {
                                       totalOwnerAmount += amt;
+                                      final ownerDesc =
+                                          doc['description'] ?? "";
+                                      if (ownerDesc.toString().isNotEmpty) {
+                                        ownerDescriptions.add(ownerDesc);
+                                      }
                                     } else {
                                       totalPaidAmount += amt;
                                     }
@@ -802,6 +808,10 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                     'date': groupedEntry['date'],
                                     'totalAmountPaid':
                                         totalPaidAmount + totalOwnerAmount,
+                                    'totalOwnerAmount': totalOwnerAmount,
+                                    'totalOwnerDescription': ownerDescriptions
+                                        .join(", "),
+                                    'totalSubprojectAmount': totalPaidAmount,
                                     'subprojectName': subNames.join(", "),
                                     'description': combinedDescriptions.join(
                                       "\n",

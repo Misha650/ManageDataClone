@@ -84,7 +84,33 @@ class DetailInfoPage extends StatelessWidget {
           ),
           const SizedBox(height: 15),
 
-          if (description.isNotEmpty)
+          // Owner Summary (NEW) - Show when coming from Total Project Table
+          if (data.containsKey('totalOwnerAmount') &&
+              (data['totalOwnerAmount'] ?? 0) > 0)
+            _buildPremiumCard(
+              context,
+              title: "Owner Total Amount",
+              content:
+                  "₹ ${(data['totalOwnerAmount'] as num).toStringAsFixed(2)}",
+              icon: Icons.person_rounded,
+              color: Colors.blue[800]!,
+              isAmount: true,
+            ),
+          if (data['totalOwnerDescription'] != null &&
+              data['totalOwnerDescription'].toString().isNotEmpty)
+            _buildPremiumCard(
+              context,
+              title: "Owner Description",
+              content: data['totalOwnerDescription'].toString(),
+              icon: Icons.person_pin_rounded,
+              color: Colors.blue[800]!,
+              isDescription: true,
+            ),
+          if (data.containsKey('totalOwnerAmount') &&
+              (data['totalOwnerAmount'] ?? 0) > 0)
+            const SizedBox(height: 15),
+
+          if (description.isNotEmpty && !data.containsKey('sourceGroups'))
             _buildPremiumCard(
               context,
               title: "Description",
@@ -93,7 +119,8 @@ class DetailInfoPage extends StatelessWidget {
               color: Colors.orange[800]!,
               isDescription: true,
             ),
-          if (description.isNotEmpty) const SizedBox(height: 15),
+          if (description.isNotEmpty && !data.containsKey('sourceGroups'))
+            const SizedBox(height: 15),
 
           // Grouped Source Sections (NEW)
           if (data.containsKey('sourceGroups')) ..._buildSourceGroups(context),
