@@ -148,23 +148,12 @@ class HomeProjectPageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF121212)
-          : const Color(0xFFF8F8FF),
       appBar: AppBar(
-        title: const Text(
-          'My Projects',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-        ),
-        centerTitle: false,
-        backgroundColor: isDark
-            ? const Color(0xFF2C2C3E)
-            : const Color(0xFFC7C7F1),
-        foregroundColor: isDark ? Colors.white : Colors.black87,
-        elevation: 0,
+        title: const Text('My Projects'),
         actions: [
           ValueListenableBuilder<ThemeMode>(
             valueListenable: ThemeController.themeNotifier,
@@ -188,16 +177,8 @@ class HomeProjectPageCard extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _addProject(context),
-        label: const Text(
-          "New Project",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        label: const Text("New Project"),
         icon: const Icon(Icons.add, size: 24),
-        backgroundColor: isDark
-            ? const Color(0xFF4A4A6A)
-            : const Color(0xFFC7C7F1),
-        foregroundColor: isDark ? Colors.white : Colors.black87,
-        elevation: 4,
       ),
       body: Stack(
         children: [
@@ -210,8 +191,7 @@ class HomeProjectPageCard extends StatelessWidget {
               height: 200,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: (isDark ? Colors.deepPurple : const Color(0xFFC7C7F1))
-                    .withOpacity(0.1),
+                color: theme.colorScheme.primary.withOpacity(0.1),
               ),
             ),
           ),
@@ -224,11 +204,7 @@ class HomeProjectPageCard extends StatelessWidget {
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: CircularProgressIndicator(
-                    color: isDark ? Colors.purpleAccent : Colors.deepPurple,
-                  ),
-                );
+                return const Center(child: CircularProgressIndicator());
               }
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return Center(
@@ -238,24 +214,22 @@ class HomeProjectPageCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(32),
                         decoration: BoxDecoration(
-                          color: (isDark
-                              ? Colors.white10
-                              : const Color(0xFFC7C7F1).withOpacity(0.1)),
+                          color: theme.colorScheme.primary.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.folder_off_rounded,
                           size: 80,
-                          color: isDark
-                              ? Colors.grey[600]
-                              : const Color(0xFFC7C7F1),
+                          color: theme.colorScheme.primary.withOpacity(0.5),
                         ),
                       ),
                       const SizedBox(height: 24),
                       Text(
                         "No projects found",
                         style: TextStyle(
-                          color: isDark ? Colors.white70 : Colors.black54,
+                          color: theme.colorScheme.onBackground.withOpacity(
+                            0.7,
+                          ),
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                         ),
@@ -264,7 +238,9 @@ class HomeProjectPageCard extends StatelessWidget {
                       Text(
                         "Tap the + button to create one",
                         style: TextStyle(
-                          color: isDark ? Colors.grey[500] : Colors.grey[500],
+                          color: theme.colorScheme.onBackground.withOpacity(
+                            0.5,
+                          ),
                           fontSize: 14,
                         ),
                       ),
@@ -304,14 +280,14 @@ class HomeProjectPageCard extends StatelessWidget {
                           Colors.blueAccent.shade100,
                           Colors.indigoAccent.shade100,
                           Colors.deepPurpleAccent.shade100,
-                          const Color(0xFFC7C7F1),
+                          theme.colorScheme.primary,
                         ]
                       : [
                           const Color(0xFF8E8ECA),
                           const Color(0xFF7E7EBA),
                           const Color(0xFF9E9EDA),
                           const Color(0xFFA1A1E1),
-                          const Color(0xFFC7C7F1),
+                          theme.colorScheme.primary,
                         ];
 
                   // Use project ID to pick a stable icon and color
@@ -321,71 +297,55 @@ class HomeProjectPageCard extends StatelessWidget {
                   final Color iconColor =
                       variedColors[pickIndex % variedColors.length];
 
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+                  return Card(
+                    child: InkWell(
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(24),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  SubProjectPageCard(projectId: p.id),
-                            ),
-                          );
-                        },
-                        onLongPress: () => _deleteProject(context, p.id),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: iconColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Icon(icon, size: 28, color: iconColor),
-                              ),
-                              const Spacer(),
-                              Text(
-                                title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 17,
-                                  color: isDark ? Colors.white : Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                desc.isEmpty ? "No description" : desc,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: isDark
-                                      ? Colors.grey[400]
-                                      : Colors.grey[600],
-                                  height: 1.3,
-                                ),
-                              ),
-                            ],
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SubProjectPageCard(projectId: p.id),
                           ),
+                        );
+                      },
+                      onLongPress: () => _deleteProject(context, p.id),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: iconColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Icon(icon, size: 28, color: iconColor),
+                            ),
+                            const Spacer(),
+                            Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 17,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              desc.isEmpty ? "No description" : desc,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: theme.colorScheme.onSurface.withOpacity(
+                                  0.6,
+                                ),
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
