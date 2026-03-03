@@ -2,7 +2,6 @@ import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_not
 import 'package:flutter/material.dart';
 import 'package:manage_data/view/home_page.dart';
 
-import 'main.dart';
 import 'view/ProjectTable/show_project_title_page.dart';
 import 'view/profile/profile_page.dart';
 

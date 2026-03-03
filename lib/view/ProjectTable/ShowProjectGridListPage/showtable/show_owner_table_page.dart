@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../detail_info_page/detail_info.dart';
 
 class ShowOwnerTablePage extends StatefulWidget {
   final String projectId;
@@ -181,6 +182,12 @@ class _ShowOwnerTablePageState extends State<ShowOwnerTablePage> {
         );
       },
     );
+  }
+
+  void _navigateToDetail(Map<String, dynamic> data) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => DetailInfoPage(data: data)));
   }
 
   @override
@@ -392,20 +399,25 @@ class _ShowOwnerTablePageState extends State<ShowOwnerTablePage> {
                               });
                             }
                           },
-                          onSelectChanged: isSelectionMode
-                              ? (value) {
-                                  setState(() {
-                                    if (value == true) {
-                                      selectedDocIds.add(docId);
-                                    } else {
-                                      selectedDocIds.remove(docId);
-                                    }
-                                    if (selectedDocIds.isEmpty) {
-                                      isSelectionMode = false;
-                                    }
-                                  });
+                          onSelectChanged: (value) {
+                            if (isSelectionMode) {
+                              setState(() {
+                                if (value == true) {
+                                  selectedDocIds.add(docId);
+                                } else {
+                                  selectedDocIds.remove(docId);
                                 }
-                              : null,
+                                if (selectedDocIds.isEmpty) {
+                                  isSelectionMode = false;
+                                }
+                              });
+                            } else {
+                              _navigateToDetail({
+                                ...data,
+                                'date': data['date'],
+                              });
+                            }
+                          },
                           cells: [
                             DataCell(
                               isSelectionMode
@@ -424,7 +436,19 @@ class _ShowOwnerTablePageState extends State<ShowOwnerTablePage> {
                                         });
                                       },
                                     )
-                                  : Text("${index + 1}"),
+                                  : Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                      ),
+                                      child: Text(
+                                        "${index + 1}",
+                                        style: TextStyle(
+                                          color: Theme.of(context).primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ),
                             ),
                             DataCell(Text(dateStr)),
                             DataCell(Text(data['description'] ?? "-")),
