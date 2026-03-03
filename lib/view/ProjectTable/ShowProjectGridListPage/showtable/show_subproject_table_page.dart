@@ -547,10 +547,12 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                                       final entries =
                                           item['myValue'] as List? ?? [];
                                       final details = entries
-                                          .map(
-                                            (e) =>
-                                                "${e['title']}, ${e['amountPaid']}",
-                                          )
+                                          .map((e) {
+                                            final title = e['title'] ?? '';
+                                            final desc = e['description'] ?? '';
+                                            final paid = e['amountPaid'] ?? 0;
+                                            return "$title${desc.isNotEmpty ? ', $desc' : ''}, $paid";
+                                          })
                                           .join(", ");
                                       value = details;
                                     }

@@ -157,16 +157,30 @@ class DetailInfoPage extends StatelessWidget {
               subContent = "Paid: ₹${item['amountPaid'] ?? 0}";
             } else if (key == 'dualFields' || key == 'labourFields') {
               final myValue = item['myValue'] as List? ?? [];
-              subContent = myValue
+              final itemDescription = item['description'] ?? "";
+              subContent = itemDescription.isNotEmpty
+                  ? "$itemDescription\n\n"
+                  : "";
+              subContent += myValue
                   .map((e) {
                     if (e is Map) {
                       final t = e['title'] ?? "";
                       final p = e['amountPaid'] ?? 0;
                       final b = e['balance'] ?? 0;
-                      return "• $t: ₹$p ${b != 0 ? '(Bal: ₹$b)' : ''}";
+                      final desc =
+                          e['description'] ??
+                          ""; // This is what the user meant by 'desc'
+
+                      String itemLine =
+                          "• $t: ₹$p${b != 0 ? ' (Bal: ₹$b)' : ''}";
+                      if (desc.isNotEmpty) {
+                        itemLine += "\n  $desc";
+                      }
+                      return itemLine;
                     }
                     return "";
                   })
+                  .where((s) => s.isNotEmpty)
                   .join("\n");
             }
 
