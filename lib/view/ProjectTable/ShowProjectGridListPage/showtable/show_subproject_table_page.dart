@@ -665,12 +665,12 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                         ),
                       ),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Total Amount: ",
+                          "Total: ",
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: Theme.of(
                               context,
