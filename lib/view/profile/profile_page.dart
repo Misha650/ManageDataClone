@@ -156,16 +156,32 @@ class ProfilePage extends StatelessWidget {
                           final isDark = mode == ThemeMode.dark;
                           return _buildMenuTile(
                             context,
-                            icon: isDark ? Icons.dark_mode : Icons.light_mode,
-                            title: "Dark Mode",
-                            trailing: Switch(
-                              value: isDark,
-                              onChanged: (val) {
-                                ThemeController.themeNotifier.value = val
-                                    ? ThemeMode.dark
-                                    : ThemeMode.light;
-                              },
-                              activeColor: theme.colorScheme.primary,
+                            icon: isDark
+                                ? Icons.dark_mode_rounded
+                                : Icons.light_mode_rounded,
+                            title: "Appearance",
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  isDark ? "Dark" : "Light",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Switch.adaptive(
+                                  value: isDark,
+                                  onChanged: (val) {
+                                    ThemeController.themeNotifier.value = val
+                                        ? ThemeMode.dark
+                                        : ThemeMode.light;
+                                  },
+                                  activeColor: theme.colorScheme.primary,
+                                ),
+                              ],
                             ),
                             onTap: () {
                               ThemeController.themeNotifier.value = isDark

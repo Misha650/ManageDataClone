@@ -115,6 +115,7 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
     return StreamBuilder<QuerySnapshot>(
       stream: _stream,
       builder: (context, snapshot) {
+        final theme = Theme.of(context);
         final cachedDocs = _cache.getDocs(
           widget.projectId,
           widget.subprojectId,
@@ -156,7 +157,7 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                         });
                       },
                     )
-                  : Text("${widget.subprojectName} Detail"),
+                  : Text("${widget.subprojectName}"),
               actions: [
                 IconButton(
                   icon: Icon(isSearching ? Icons.close : Icons.search),
@@ -613,15 +614,22 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
               ),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  border: Border(
-                    top: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 2,
-                    ),
+                  color: theme.colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(32),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -630,18 +638,6 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8.0),
                         child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.primary,
-                            foregroundColor: Theme.of(
-                              context,
-                            ).colorScheme.onPrimary,
-                            minimumSize: const Size(double.infinity, 50),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -656,11 +652,8 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                             );
                           },
                           child: const Text(
-                            "mybutton",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            "VIEW PROJECT SUMMARY",
+                            style: TextStyle(letterSpacing: 1.2),
                           ),
                         ),
                       ),
