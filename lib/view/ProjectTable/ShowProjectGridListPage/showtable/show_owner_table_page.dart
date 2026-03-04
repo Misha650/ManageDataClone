@@ -465,26 +465,29 @@ class _ShowOwnerTablePageState extends State<ShowOwnerTablePage> {
                               ),
                             ),
                             DataCell(
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.edit,
-                                      color: Colors.blue,
+                              widget.userId != null
+                                  ? const SizedBox.shrink()
+                                  : Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            color: Colors.blue,
+                                          ),
+                                          onPressed: () =>
+                                              _showUpdateDialog(docId, data),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () =>
+                                              _confirmDelete(docId),
+                                        ),
+                                      ],
                                     ),
-                                    onPressed: () =>
-                                        _showUpdateDialog(docId, data),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
-                                    ),
-                                    onPressed: () => _confirmDelete(docId),
-                                  ),
-                                ],
-                              ),
                             ),
                           ],
                         );

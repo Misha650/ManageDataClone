@@ -679,9 +679,13 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                             sortedPairs.length + 2: const FixedColumnWidth(
                               100,
                             ), // Total Paid
-                            sortedPairs.length + 3: const FixedColumnWidth(
-                              120,
-                            ), // Actions
+                            sortedPairs.length + 2: const FixedColumnWidth(
+                              100,
+                            ), // Total Paid
+                            if (widget.userId == null)
+                              sortedPairs.length + 3: const FixedColumnWidth(
+                                120,
+                              ), // Actions
                           },
                           children: [
                             // --- Header Row 1: Categories (Yellow) ---
@@ -699,7 +703,8 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                   return _buildHeaderCell(parts[0]);
                                 }),
                                 _buildHeaderCell("Total Paid"),
-                                _buildHeaderCell("Actions"),
+                                if (widget.userId == null)
+                                  _buildHeaderCell("Actions"),
                               ],
                             ),
                             // --- Header Row 2: KeyTitles (Pink) ---
@@ -717,7 +722,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                   return _buildHeaderCell(parts[1]);
                                 }),
                                 _buildHeaderCell(""),
-                                _buildHeaderCell(""),
+                                if (widget.userId == null) _buildHeaderCell(""),
                               ],
                             ),
                             // --- Data Rows ---
@@ -1003,33 +1008,35 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                     onLongPress: onRowLongPress,
                                   ),
                                   // Actions Cell
-                                  _buildDataCell(
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.edit,
-                                            color: Colors.blue,
-                                            size: 20,
+                                  if (widget.userId == null)
+                                    _buildDataCell(
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.edit,
+                                              color: Colors.blue,
+                                              size: 20,
+                                            ),
+                                            onPressed: () =>
+                                                _showUpdateDocsDialog(docs),
                                           ),
-                                          onPressed: () =>
-                                              _showUpdateDocsDialog(docs),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.delete,
-                                            color: Colors.red,
-                                            size: 20,
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.delete,
+                                              color: Colors.red,
+                                              size: 20,
+                                            ),
+                                            onPressed: () =>
+                                                _confirmDeleteGroup(
+                                                  docs,
+                                                  dateStr,
+                                                ),
                                           ),
-                                          onPressed: () => _confirmDeleteGroup(
-                                            docs,
-                                            dateStr,
-                                          ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
                                 ],
                               );
                             }),

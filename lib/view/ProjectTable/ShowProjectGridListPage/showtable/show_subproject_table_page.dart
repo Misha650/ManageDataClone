@@ -591,37 +591,42 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                               ),
                             ),
                             DataCell(
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.edit,
-                                      color: Colors.blue,
-                                    ),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => AddDetailInCardPage(
-                                            projectId: widget.projectId,
-                                            subprojectId: widget.subprojectId,
-                                            docId: docIds[index],
+                              widget.userId != null
+                                  ? const SizedBox.shrink()
+                                  : Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            color: Colors.blue,
                                           ),
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    AddDetailInCardPage(
+                                                      projectId:
+                                                          widget.projectId,
+                                                      subprojectId:
+                                                          widget.subprojectId,
+                                                      docId: docIds[index],
+                                                    ),
+                                              ),
+                                            );
+                                          },
                                         ),
-                                      );
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () =>
+                                              _confirmDelete(docIds[index]),
+                                        ),
+                                      ],
                                     ),
-                                    onPressed: () =>
-                                        _confirmDelete(docIds[index]),
-                                  ),
-                                ],
-                              ),
                             ),
                           ],
                         );
