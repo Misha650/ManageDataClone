@@ -42,13 +42,21 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
   @override
   void initState() {
     super.initState();
-    // Load from cache first
-    final cachedData = _cache.getData(widget.projectId);
-    if (cachedData != null) {
-      allFormData = cachedData;
-      filteredData = cachedData;
-      isLoading = false;
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    // 1. Try to load from persistent cache first
+    final cachedData = await _cache.getData(widget.projectId);
+    if (cachedData != null && mounted) {
+      setState(() {
+        allFormData = cachedData;
+        filteredData = cachedData;
+        isLoading = false;
+      });
     }
+
+    // 2. Always fetch fresh data in the background
     _fetchTotalData();
   }
 
@@ -159,8 +167,8 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
         return dateB.compareTo(dateA);
       });
 
-      // Update cache
-      _cache.setData(widget.projectId, finalData);
+      // 3. Update persistent cache
+      await _cache.setData(widget.projectId, finalData);
 
       if (mounted) {
         setState(() {
@@ -170,11 +178,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
         });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Error fetching data: $e")));
-      }
+      debugPrint("Error fetching data: $e");
       if (mounted) {
         setState(() {
           isLoading = false;

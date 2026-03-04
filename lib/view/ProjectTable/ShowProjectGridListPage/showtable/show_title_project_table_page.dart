@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:manage_data/controller/sub_project_cache_controller.dart';
 import 'package:manage_data/view/detail_info_page/detail_info.dart';
 
@@ -30,6 +31,35 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
   String searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
   final SubProjectCacheController _cache = SubProjectCacheController();
+  List<Map<String, dynamic>>? _cachedData;
+  late Stream<QuerySnapshot> _stream;
+
+  @override
+  void initState() {
+    super.initState();
+    final uid = (FirebaseAuth.instance.currentUser?.uid) ?? "";
+    _stream = FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .collection("projects")
+        .doc(widget.projectId)
+        .collection("subprojects")
+        .doc(widget.subprojectId)
+        .collection("formData")
+        .orderBy('date', descending: true)
+        .snapshots();
+
+    _loadCache();
+  }
+
+  Future<void> _loadCache() async {
+    final data = await _cache.getData(widget.projectId, widget.subprojectId);
+    if (data != null && mounted) {
+      setState(() {
+        _cachedData = data;
+      });
+    }
+  }
 
   void _navigateToDetail(Map<String, dynamic> data) {
     Navigator.of(
@@ -39,20 +69,37 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<int>(
-      valueListenable: _cache.getNotifier(
-        widget.projectId,
-        widget.subprojectId,
-      ),
-      builder: (context, _, __) {
-        final allDocs =
-            _cache.getDocs(widget.projectId, widget.subprojectId) ?? [];
+    return StreamBuilder<QuerySnapshot>(
+      stream: _stream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            _cachedData == null) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasData) {
+          final docsData = snapshot.data!.docs
+              .map(
+                (doc) => {...doc.data() as Map<String, dynamic>, 'id': doc.id},
+              )
+              .toList();
+
+          // Update cache asynchronously
+          _cache.setData(widget.projectId, widget.subprojectId, docsData);
+
+          // Update local view immediately
+          _cachedData = docsData;
+        }
+
+        final allDocs = _cachedData ?? [];
         // Collect data for the specific title
         final List<Map<String, dynamic>> allTitleData = [];
 
         final queryLC = widget.searchedTitle.toLowerCase();
         for (var doc in allDocs) {
-          final data = doc.data() as Map<String, dynamic>;
+          final data = doc;
           final date = (data['date'] as Timestamp?)?.toDate();
           final dateStr = date != null
               ? DateFormat('dd/MM/yy').format(date)

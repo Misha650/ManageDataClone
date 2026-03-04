@@ -36,6 +36,7 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
   final TextEditingController _searchController = TextEditingController();
   late Stream<QuerySnapshot> _stream;
   final SubProjectCacheController _cache = SubProjectCacheController();
+  List<Map<String, dynamic>>? _cachedData;
 
   @override
   void initState() {
@@ -50,6 +51,17 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
         .collection("formData")
         .orderBy('date', descending: true)
         .snapshots();
+
+    _loadCache();
+  }
+
+  Future<void> _loadCache() async {
+    final data = await _cache.getData(widget.projectId, widget.subprojectId);
+    if (data != null && mounted) {
+      setState(() {
+        _cachedData = data;
+      });
+    }
   }
 
   Future<void> _confirmDelete(String docId) async {
@@ -117,28 +129,28 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
       stream: _stream,
       builder: (context, snapshot) {
         final theme = Theme.of(context);
-        final cachedDocs = _cache.getDocs(
-          widget.projectId,
-          widget.subprojectId,
-        );
-
         if (snapshot.connectionState == ConnectionState.waiting &&
-            cachedDocs == null) {
-          return Scaffold(
-            body: const Center(child: CircularProgressIndicator()),
+            _cachedData == null) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
         if (snapshot.hasData) {
-          _cache.setDocs(
-            widget.projectId,
-            widget.subprojectId,
-            snapshot.data!.docs.cast<QueryDocumentSnapshot>(),
-          );
+          final docsData = snapshot.data!.docs
+              .map(
+                (doc) => {...doc.data() as Map<String, dynamic>, 'id': doc.id},
+              )
+              .toList();
+
+          // Update cache asynchronously
+          _cache.setData(widget.projectId, widget.subprojectId, docsData);
+
+          // Update local view immediately
+          _cachedData = docsData;
         }
 
-        final allDocs =
-            _cache.getDocs(widget.projectId, widget.subprojectId) ?? [];
+        final allDocs = _cachedData ?? [];
 
         if (allDocs.isEmpty) {
           return Scaffold(
@@ -181,7 +193,7 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
         // Filtering logic
         final filteredDocs = allDocs.where((doc) {
           if (searchQuery.isEmpty) return true;
-          final data = doc.data() as Map<String, dynamic>;
+          final data = doc;
           final date = (data['date'] as Timestamp?)?.toDate();
           final dateStr = date != null
               ? DateFormat('dd/MM/yy').format(date).toLowerCase()
@@ -232,10 +244,8 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
           return false;
         }).toList();
 
-        final docDataList = filteredDocs
-            .map((doc) => doc.data() as Map<String, dynamic>)
-            .toList();
-        final docIds = filteredDocs.map((doc) => doc.id).toList();
+        final docDataList = filteredDocs.map((doc) => doc).toList();
+        final docIds = filteredDocs.map((doc) => doc['id'] as String).toList();
 
         // 1. Collect all unique keyTitles for columns
         final Set<String> allKeys = {};
@@ -278,11 +288,8 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
         double displayTotal = 0;
         if (selectedDocIds.isNotEmpty) {
           for (var doc in allDocs) {
-            if (selectedDocIds.contains(doc.id)) {
-              displayTotal +=
-                  (doc.data() as Map<String, dynamic>)['totalAmountPaid']
-                      as num? ??
-                  0;
+            if (selectedDocIds.contains(doc['id'])) {
+              displayTotal += doc['totalAmountPaid'] as num? ?? 0;
             }
           }
         } else {
