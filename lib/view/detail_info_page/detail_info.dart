@@ -31,15 +31,19 @@ class DetailInfoPage extends StatelessWidget {
               : "N/A");
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         title: Text(
           title.isNotEmpty ? title : "Detail Information",
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF2C2C3E)
+            : Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : Colors.black87,
         centerTitle: true,
       ),
       body: ListView(
@@ -245,10 +249,10 @@ class DetailInfoPage extends StatelessWidget {
             ),
             child: Text(
               sourceName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
           ),
@@ -328,10 +332,10 @@ class DetailInfoPage extends StatelessWidget {
       contentWidgets.add(
         Text(
           itemDescription,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
           ),
         ),
       );
@@ -443,11 +447,13 @@ class DetailInfoPage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -475,7 +481,7 @@ class DetailInfoPage extends StatelessWidget {
                   title,
                   style: TextStyle(
                     fontSize: 16,
-                    color: const Color.fromARGB(255, 19, 19, 19),
+                    color: Theme.of(context).textTheme.titleMedium?.color,
                     fontWeight: FontWeight.bold,
                     fontStyle: FontStyle.normal,
                   ),
