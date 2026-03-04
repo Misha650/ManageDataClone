@@ -82,6 +82,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       final updateData = {
         'displayName': _nameController.text.trim(),
+        'email': _user.email, // ✅ Ensure email is saved
         'lastUpdated': FieldValue.serverTimestamp(),
       };
 

@@ -30,6 +30,16 @@ class _BottomtabsState extends State<Bottomtabs> {
           .collection('users')
           .doc(user.uid)
           .get();
+
+      // ✅ Sync basic info if missing
+      if (!doc.exists || doc.data()?['email'] == null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'email': user.email,
+          'displayName': user.displayName,
+          'lastLogin': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+
       if (mounted) {
         setState(() {
           _userRole = doc.data()?['role'];
@@ -51,8 +61,9 @@ class _BottomtabsState extends State<Bottomtabs> {
     final List<Widget> pages = [
       HomeProjectPageCard(),
       ShowProjectPage(),
-      ProfilePage(),
+
       if (isAdmin) const UsersDetailPage(),
+      ProfilePage(),
     ];
 
     return Scaffold(
@@ -80,17 +91,17 @@ class _BottomtabsState extends State<Bottomtabs> {
             selectedIcon: Icon(Icons.dashboard_rounded),
             label: 'Summary',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
           if (isAdmin)
             const NavigationDestination(
               icon: Icon(Icons.group_outlined),
               selectedIcon: Icon(Icons.group_rounded),
               label: 'Users',
             ),
+          const NavigationDestination(
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
         ],
       ),
     );
