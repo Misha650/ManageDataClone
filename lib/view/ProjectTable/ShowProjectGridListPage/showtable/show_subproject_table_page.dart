@@ -13,12 +13,14 @@ class ShowSubProjectTablePage extends StatefulWidget {
   final String projectId;
   final String subprojectId;
   final String subprojectName;
+  final String? userId; // ✅ Added userId
 
   ShowSubProjectTablePage({
     super.key,
     required this.projectId,
     required this.subprojectId,
     required this.subprojectName,
+    this.userId,
   });
 
   @override
@@ -27,7 +29,7 @@ class ShowSubProjectTablePage extends StatefulWidget {
 }
 
 class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
-  final String uid = FirebaseAuth.instance.currentUser!.uid;
+  String get uid => widget.userId ?? FirebaseAuth.instance.currentUser!.uid;
 
   Set<String> selectedDocIds = {};
   bool isSelectionMode = false;

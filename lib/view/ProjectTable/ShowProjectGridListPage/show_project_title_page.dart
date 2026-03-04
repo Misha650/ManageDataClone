@@ -7,17 +7,23 @@ import 'showtable/show_owner_table_page.dart';
 import 'showtable/show_total_project_table_page.dart';
 
 class ShowProjectTitlePage extends StatelessWidget {
-  ShowProjectTitlePage({super.key});
-  final String uid = FirebaseAuth.instance.currentUser!.uid;
+  final String? userId; // ✅ Added userId
+  const ShowProjectTitlePage({super.key, this.userId});
+
+  String get effectiveUid =>
+      userId ?? FirebaseAuth.instance.currentUser?.uid ?? "";
 
   @override
   Widget build(BuildContext context) {
+    if (effectiveUid.isEmpty) {
+      return const Scaffold(body: Center(child: Text("Please login")));
+    }
     return Scaffold(
       appBar: AppBar(title: const Text("All Projects")),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection("users")
-            .doc(uid)
+            .doc(effectiveUid)
             .collection("projects")
             .orderBy('createdAt', descending: true)
             .snapshots(),
@@ -55,6 +61,7 @@ class ShowProjectTitlePage extends StatelessWidget {
                         builder: (_) => ShowSubProjectTitlePage(
                           projectId: projectDoc.id,
                           projectName: title,
+                          userId: userId, // ✅ Pass userId
                         ),
                       ),
                     );
@@ -128,22 +135,29 @@ class ShowProjectTitlePage extends StatelessWidget {
 class ShowSubProjectTitlePage extends StatelessWidget {
   final String projectId;
   final String projectName;
+  final String? userId; // ✅ Added userId
+
   ShowSubProjectTitlePage({
     super.key,
     required this.projectId,
     required this.projectName,
+    this.userId,
   });
 
-  final String uid = FirebaseAuth.instance.currentUser!.uid;
+  String get effectiveUid =>
+      userId ?? FirebaseAuth.instance.currentUser?.uid ?? "";
 
   @override
   Widget build(BuildContext context) {
+    if (effectiveUid.isEmpty) {
+      return const Scaffold(body: Center(child: Text("Please login")));
+    }
     return Scaffold(
       appBar: AppBar(title: Text("$projectName "), centerTitle: true),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection("users")
-            .doc(uid)
+            .doc(effectiveUid)
             .collection("projects")
             .doc(projectId)
             .collection("subprojects")
@@ -182,6 +196,7 @@ class ShowSubProjectTitlePage extends StatelessWidget {
                           builder: (_) => ShowTotalProjectTablePage(
                             projectId: projectId,
                             projectName: projectName,
+                            userId: userId, // ✅ Pass userId
                           ),
                         ),
                       );
@@ -256,8 +271,10 @@ class ShowSubProjectTitlePage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) =>
-                              ShowOwnerTablePage(projectId: projectId),
+                          builder: (_) => ShowOwnerTablePage(
+                            projectId: projectId,
+                            userId: userId, // ✅ Pass userId
+                          ),
                         ),
                       );
                     },
@@ -336,6 +353,7 @@ class ShowSubProjectTitlePage extends StatelessWidget {
                           projectId: projectId,
                           subprojectId: subDoc.id,
                           subprojectName: title,
+                          userId: userId, // ✅ Pass userId
                         ),
                       ),
                     );

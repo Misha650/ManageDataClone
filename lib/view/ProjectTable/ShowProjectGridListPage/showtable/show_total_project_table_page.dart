@@ -12,12 +12,14 @@ class ShowTotalProjectTablePage extends StatefulWidget {
   final String projectId;
   final String projectName;
   final List<Widget>? extraActions;
+  final String? userId; // ✅ Added userId
 
   const ShowTotalProjectTablePage({
     super.key,
     required this.projectId,
     required this.projectName,
     this.extraActions,
+    this.userId,
   });
 
   @override
@@ -26,7 +28,7 @@ class ShowTotalProjectTablePage extends StatefulWidget {
 }
 
 class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
-  final String uid = FirebaseAuth.instance.currentUser!.uid;
+  String get uid => widget.userId ?? FirebaseAuth.instance.currentUser!.uid;
   bool isLoading = true;
   List<Map<String, dynamic>> allFormData = [];
   List<Map<String, dynamic>> filteredData = [];

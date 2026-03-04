@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:manage_data/view/ProjectTable/ShowProjectGridListPage/show_project_title_page.dart'; // ✅ Import
 import 'dart:convert';
 
 class UsersDetailPage extends StatelessWidget {
@@ -89,7 +90,14 @@ class UsersDetailPage extends StatelessWidget {
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    // Navigate to user detail or projects in future
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ShowProjectTitlePage(
+                          userId: users[index].id, // ✅ Pass userId
+                        ),
+                      ),
+                    );
                   },
                 ),
               );

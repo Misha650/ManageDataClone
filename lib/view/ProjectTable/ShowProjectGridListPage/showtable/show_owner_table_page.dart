@@ -6,14 +6,15 @@ import '../../../detail_info_page/detail_info.dart';
 
 class ShowOwnerTablePage extends StatefulWidget {
   final String projectId;
-  const ShowOwnerTablePage({super.key, required this.projectId});
+  final String? userId; // ✅ Added userId
+  const ShowOwnerTablePage({super.key, required this.projectId, this.userId});
 
   @override
   State<ShowOwnerTablePage> createState() => _ShowOwnerTablePageState();
 }
 
 class _ShowOwnerTablePageState extends State<ShowOwnerTablePage> {
-  final String uid = FirebaseAuth.instance.currentUser!.uid;
+  String get uid => widget.userId ?? FirebaseAuth.instance.currentUser!.uid;
 
   Set<String> selectedDocIds = {};
   bool isSelectionMode = false;
