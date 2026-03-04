@@ -529,6 +529,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     // Collect all unique (Subproject, KeyTitle) combinations
     final Set<String> allCategoryKeys = {};
     final q = searchQuery.trim().toLowerCase();
@@ -676,12 +677,9 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                             // --- Header Row 1: Categories (Yellow) ---
                             TableRow(
                               decoration: BoxDecoration(
-                                color: const Color.fromARGB(
-                                  255,
-                                  137,
-                                  48,
-                                  155,
-                                ).withOpacity(0.1),
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.1,
+                                ),
                               ),
                               children: [
                                 _buildHeaderCell(""),
@@ -696,13 +694,10 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                             ),
                             // --- Header Row 2: KeyTitles (Pink) ---
                             TableRow(
-                              decoration: const BoxDecoration(
-                                color: Color.fromARGB(
-                                  255,
-                                  255,
-                                  192,
-                                  203,
-                                ), // Pink
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.secondary.withOpacity(
+                                  0.1,
+                                ),
                               ),
                               children: [
                                 _buildHeaderCell(""),
