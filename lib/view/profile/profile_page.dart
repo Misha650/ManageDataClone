@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:manage_data/auth/google_login.dart';
 import 'package:manage_data/controller/teame_controller.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'edit_profile_page.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -198,6 +199,7 @@ class ProfilePage extends StatelessWidget {
                         title: "Sign Out",
                         color: Colors.redAccent,
                         onTap: () async {
+                          await GoogleSignIn().signOut();
                           await FirebaseAuth.instance.signOut();
                           if (context.mounted) {
                             Navigator.pushAndRemoveUntil(
