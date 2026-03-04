@@ -63,31 +63,19 @@ class ShowProjectPage extends StatelessWidget {
         final projectId = recentProject.id;
         final projectName = recentProject['title'] ?? "Untitled";
 
-        return Stack(
-          children: [
-            ShowTotalProjectTablePage(
-              projectId: projectId,
-              projectName: projectName,
-            ),
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 5,
-              right: 15,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.list_alt_rounded),
-                  tooltip: "All Projects",
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => ShowProjectTitlePage()),
-                    );
-                  },
-                ),
-              ),
+        return ShowTotalProjectTablePage(
+          projectId: projectId,
+          projectName: projectName,
+          extraActions: [
+            IconButton(
+              icon: const Icon(Icons.list_alt_rounded),
+              tooltip: "All Projects",
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ShowProjectTitlePage()),
+                );
+              },
             ),
           ],
         );

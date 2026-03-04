@@ -11,11 +11,13 @@ import 'package:manage_data/view/detail_info_page/detail_info.dart';
 class ShowTotalProjectTablePage extends StatefulWidget {
   final String projectId;
   final String projectName;
+  final List<Widget>? extraActions;
 
   const ShowTotalProjectTablePage({
     super.key,
     required this.projectId,
     required this.projectName,
+    this.extraActions,
   });
 
   @override
@@ -615,6 +617,8 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                     : "${widget.projectName}",
               ),
         actions: [
+          if (widget.extraActions != null && !isSelectionMode)
+            ...widget.extraActions!,
           if (isSelectionMode)
             IconButton(
               icon: const Icon(Icons.select_all_rounded),
