@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../../utils/number_to_words.dart';
 
 import 'show_title_project_table_page.dart';
 import 'package:manage_data/controller/sub_project_cache_controller.dart';
@@ -678,12 +679,15 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                             ).colorScheme.onPrimaryContainer,
                           ),
                         ),
-                        Text(
-                          displayTotal.toStringAsFixed(2),
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
+                        Tooltip(
+                          message: NumberToWords.convert(displayTotal),
+                          child: Text(
+                            displayTotal.toStringAsFixed(2),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                           ),
                         ),
                       ],
