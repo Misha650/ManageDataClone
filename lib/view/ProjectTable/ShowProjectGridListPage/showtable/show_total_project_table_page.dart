@@ -612,7 +612,7 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
             : Text(
                 isSelectionMode
                     ? "${selectedDocIds.length} Selected"
-                    : "${widget.projectName} Total Data",
+                    : "${widget.projectName}",
               ),
         actions: [
           if (isSelectionMode)
@@ -864,6 +864,8 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                                 context,
                                               ).primaryColor,
                                               fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                              fontStyle: FontStyle.italic,
                                               decoration:
                                                   TextDecoration.underline,
                                             ),
@@ -873,7 +875,13 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                   ),
                                   // Date Cell
                                   _buildDataCell(
-                                    Text(dateStr),
+                                    Text(
+                                      dateStr,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
                                     onTap: onRowTap,
                                     onLongPress: onRowLongPress,
                                   ),
@@ -962,6 +970,10 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                             ? "-"
                                             : displayValue,
                                         textAlign: TextAlign.start,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontStyle: FontStyle.italic,
+                                        ),
                                       ),
                                       onTap: onRowTap,
                                       onLongPress: onRowLongPress,
@@ -973,6 +985,8 @@ class _ShowTotalProjectTablePageState extends State<ShowTotalProjectTablePage> {
                                       "${groupedEntry['totalAmountPaid'] ?? 0}",
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        fontStyle: FontStyle.italic,
                                       ),
                                     ),
                                     onTap: onRowTap,

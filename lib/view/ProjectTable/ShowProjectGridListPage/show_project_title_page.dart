@@ -139,7 +139,7 @@ class ShowSubProjectTitlePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("$projectName - Categories")),
+      appBar: AppBar(title: Text("$projectName "), centerTitle: true),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection("users")

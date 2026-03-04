@@ -205,6 +205,10 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
                                 context,
                               ).colorScheme.primary.withOpacity(0.1),
                             ),
+                            dataTextStyle: const TextStyle(
+                              fontSize: 13,
+                              fontStyle: FontStyle.italic,
+                            ),
                             columns: const [
                               DataColumn(
                                 label: Text(
@@ -306,6 +310,8 @@ class _ShowTitleProjectTablePageState extends State<ShowTitleProjectTablePage> {
                                                   context,
                                                 ).colorScheme.primary,
                                                 fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                                fontStyle: FontStyle.italic,
                                                 decoration:
                                                     TextDecoration.underline,
                                               ),

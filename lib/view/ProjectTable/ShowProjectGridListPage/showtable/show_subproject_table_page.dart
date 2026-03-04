@@ -405,6 +405,10 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                       headingRowColor: WidgetStateProperty.all(
                         Theme.of(context).colorScheme.primary.withOpacity(0.1),
                       ),
+                      dataTextStyle: const TextStyle(
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                      ),
                       columns: [
                         DataColumn(
                           label: Text(
@@ -508,6 +512,8 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                                         style: TextStyle(
                                           color: Theme.of(context).primaryColor,
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          fontStyle: FontStyle.italic,
                                           decoration: TextDecoration.underline,
                                         ),
                                       ),
@@ -569,6 +575,8 @@ class _ShowSubProjectTablePageState extends State<ShowSubProjectTablePage> {
                                 "${data['totalAmountPaid'] ?? 0}",
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  fontStyle: FontStyle.italic,
                                 ),
                               ),
                             ),
